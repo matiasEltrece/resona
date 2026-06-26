@@ -1,0 +1,554 @@
+"use client";
+
+import { useState, useRef, useCallback } from "react";
+import { LANGUAGES, VOICE_PRESETS, SAMPLE_SCRIPTS } from "@/lib/catalog";
+import type { GenerateRequest, VoiceDesign } from "@/lib/inference/types";
+
+/* ─── tipos locales ──────────────────────────────────────────────────────── */
+type Tab = "design" | "clone";
+type GenState = "idle" | "loading" | "done" | "error";
+
+interface AudioResult {
+  src: string;
+  durationMs: number;
+  rtf: number;
+  provider: string;
+  isReal: boolean;
+}
+
+/* ─── utilidades ──────────────────────────────────────────────────────────── */
+function b64ToDataUrl(b64: string, mime: string) {
+  return `data:${mime};base64,${b64}`;
+}
+
+/* ─── subcomponentes de UI ───────────────────────────────────────────────── */
+
+function WaveViz({ playing }: { playing: boolean }) {
+  const heights = [30, 55, 80, 100, 70, 45, 85, 60, 40, 75, 50, 90, 35, 65, 80];
+  return (
+    <div className="flex items-end gap-[3px] h-12">
+      {heights.map((h, i) => (
+        <div
+          key={i}
+          className="bar"
+          style={{
+            height: playing ? `${h}%` : "18%",
+            animationDelay: `${i * 0.07}s`,
+            animationPlayState: playing ? "running" : "paused",
+            transition: "height 0.3s ease",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const duration = result.durationMs / 1000;
+
+  const toggle = () => {
+    if (!audioRef.current) return;
+    if (playing) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setPlaying(!playing);
+  };
+
+  const handleTimeUpdate = () => {
+    if (!audioRef.current) return;
+    setCurrentTime(audioRef.current.currentTime);
+    setProgress((audioRef.current.currentTime / (audioRef.current.duration || 1)) * 100);
+  };
+
+  const handleEnded = () => { setPlaying(false); setProgress(0); setCurrentTime(0); };
+
+  const seek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!audioRef.current) return;
+    const t = (parseFloat(e.target.value) / 100) * (audioRef.current.duration || 0);
+    audioRef.current.currentTime = t;
+    setProgress(parseFloat(e.target.value));
+  };
+
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+  const download = () => {
+    const a = document.createElement("a");
+    a.href = result.src;
+    a.download = `resona-${Date.now()}.wav`;
+    a.click();
+  };
+
+  return (
+    <div className="glass rounded-2xl p-5 fade-up space-y-4">
+      <audio
+        ref={audioRef}
+        src={result.src}
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={handleEnded}
+      />
+
+      <div className="flex items-center gap-4">
+        <button
+          onClick={toggle}
+          className="w-12 h-12 rounded-full btn-accent flex items-center justify-center flex-shrink-0"
+          aria-label={playing ? "Pausar" : "Reproducir"}
+        >
+          {playing ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5,3 19,12 5,21" />
+            </svg>
+          )}
+        </button>
+        <WaveViz playing={playing} />
+        <div className="ml-auto text-xs text-muted font-mono">
+          {fmt(currentTime)} / {fmt(duration)}
+        </div>
+      </div>
+
+      <input
+        type="range"
+        min="0"
+        max="100"
+        value={progress}
+        onChange={seek}
+        className="seek-bar w-full"
+        style={{
+          background: `linear-gradient(to right, var(--accent-from) ${progress}%, rgba(255,255,255,0.12) ${progress}%)`,
+        }}
+      />
+
+      <div className="flex items-center justify-between text-xs text-muted">
+        <div className="flex gap-3">
+          {!result.isReal && (
+            <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+              demo · sin GPU
+            </span>
+          )}
+          <span>RTF {result.rtf.toFixed(3)}</span>
+          <span>{result.provider}</span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={download}
+            className="px-3 py-1 glass glass-hover rounded-lg text-xs"
+            title="Descargar WAV"
+          >
+            ↓ WAV
+          </button>
+          <button
+            onClick={onNew}
+            className="px-3 py-1 glass glass-hover rounded-lg text-xs"
+          >
+            Nueva generación
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DesignPanel({
+  design,
+  setDesign,
+}: {
+  design: VoiceDesign;
+  setDesign: (d: VoiceDesign) => void;
+}) {
+  const opt = <T extends string>(
+    key: keyof VoiceDesign,
+    options: { value: T; label: string }[],
+  ) => (
+    <div className="flex flex-wrap gap-2">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          onClick={() => setDesign({ ...design, [key]: o.value })}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+            design[key] === o.value
+              ? "ring-accent text-white bg-white/10"
+              : "glass glass-hover text-muted"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Presets */}
+      <div>
+        <p className="text-xs text-muted mb-2 uppercase tracking-widest">Presets</p>
+        <div className="grid grid-cols-2 gap-2">
+          {VOICE_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setDesign(p.design as VoiceDesign)}
+              className={`glass glass-hover rounded-xl p-3 text-left transition-all ${
+                JSON.stringify(design) === JSON.stringify(p.design) ? "ring-accent" : ""
+              }`}
+            >
+              <p className="font-semibold text-sm">{p.name}</p>
+              <p className="text-xs text-muted mt-0.5">{p.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Controles avanzados */}
+      <details className="group">
+        <summary className="text-xs text-muted uppercase tracking-widest cursor-pointer select-none flex items-center gap-2">
+          <span>Ajuste fino</span>
+          <span className="group-open:rotate-180 transition-transform">›</span>
+        </summary>
+        <div className="mt-3 space-y-3">
+          <div>
+            <p className="text-xs text-muted mb-1.5">Género</p>
+            {opt("gender", [
+              { value: "female", label: "Femenina" },
+              { value: "male", label: "Masculina" },
+              { value: "neutral", label: "Neutra" },
+            ])}
+          </div>
+          <div>
+            <p className="text-xs text-muted mb-1.5">Edad</p>
+            {opt("age", [
+              { value: "child", label: "Niño/a" },
+              { value: "young", label: "Joven" },
+              { value: "adult", label: "Adulto/a" },
+              { value: "senior", label: "Mayor" },
+            ])}
+          </div>
+          <div>
+            <p className="text-xs text-muted mb-1.5">Tono</p>
+            {opt("pitch", [
+              { value: "low", label: "Grave" },
+              { value: "medium", label: "Medio" },
+              { value: "high", label: "Agudo" },
+            ])}
+          </div>
+          <div>
+            <p className="text-xs text-muted mb-1.5">Estilo</p>
+            {opt("style", [
+              { value: "neutral", label: "Neutro" },
+              { value: "expressive", label: "Expresivo" },
+              { value: "narration", label: "Narración" },
+              { value: "whisper", label: "Susurro" },
+            ])}
+          </div>
+          <div>
+            <p className="text-xs text-muted mb-1.5">Emoción</p>
+            {opt("emotion", [
+              { value: "neutral", label: "Neutro" },
+              { value: "happy", label: "Feliz" },
+              { value: "sad", label: "Triste" },
+              { value: "calm", label: "Calmo" },
+            ])}
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function ClonePanel({
+  onAudio,
+}: {
+  onAudio: (b64: string) => void;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const readFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const url = e.target?.result as string;
+      const b64 = url.split(",")[1];
+      onAudio(b64);
+      setFileName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("audio/")) readFile(file);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        onClick={() => inputRef.current?.click()}
+        className={`glass rounded-xl p-6 text-center cursor-pointer transition-all ${
+          dragging ? "ring-accent scale-[1.01]" : "glass-hover"
+        }`}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="audio/*"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); }}
+        />
+        <div className="text-3xl mb-2">🎙</div>
+        {fileName ? (
+          <>
+            <p className="text-sm font-medium text-green-400">✓ {fileName}</p>
+            <p className="text-xs text-muted mt-1">Clic para cambiar</p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-medium">Subí el audio de referencia</p>
+            <p className="text-xs text-muted mt-1">MP3, WAV, M4A · mínimo 5s recomendado</p>
+          </>
+        )}
+      </div>
+      <p className="text-xs text-muted">
+        El modelo aprende el timbre de esa voz y la reproduce en el texto que escribas, en cualquier idioma.
+      </p>
+    </div>
+  );
+}
+
+/* ─── Studio principal ───────────────────────────────────────────────────── */
+
+const DEFAULT_DESIGN: VoiceDesign = {
+  gender: "female",
+  age: "adult",
+  pitch: "medium",
+  style: "narration",
+  emotion: "calm",
+};
+
+export default function Studio() {
+  const [tab, setTab] = useState<Tab>("design");
+  const [text, setText] = useState(SAMPLE_SCRIPTS[0]);
+  const [lang, setLang] = useState("es-AR");
+  const [design, setDesign] = useState<VoiceDesign>(DEFAULT_DESIGN);
+  const [refAudio, setRefAudio] = useState<string | undefined>();
+  const [genState, setGenState] = useState<GenState>("idle");
+  const [result, setResult] = useState<AudioResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [langOpen, setLangOpen] = useState(false);
+
+  const selectedLang = LANGUAGES.find((l) => l.code === lang) ?? LANGUAGES[0];
+
+  const generate = useCallback(async () => {
+    if (!text.trim() || genState === "loading") return;
+    setGenState("loading");
+    setResult(null);
+    setError(null);
+
+    const body: GenerateRequest = {
+      text,
+      language: lang,
+      mode: tab === "clone" && refAudio ? "clone" : "design",
+      design: tab === "design" ? design : undefined,
+      referenceAudioBase64: tab === "clone" ? refAudio : undefined,
+    };
+
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error del servidor");
+      setResult({
+        src: b64ToDataUrl(data.audioBase64, data.mime),
+        durationMs: data.durationMs,
+        rtf: data.rtf,
+        provider: data.provider,
+        isReal: data.isReal,
+      });
+      setGenState("done");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+      setGenState("error");
+    }
+  }, [text, lang, tab, design, refAudio, genState]);
+
+  return (
+    <div className="w-full max-w-5xl mx-auto px-4 py-8 space-y-6">
+
+      {/* ── Tabs ── */}
+      <div className="flex gap-1 p-1 glass rounded-xl w-fit">
+        {(["design", "clone"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+              tab === t
+                ? "bg-white/10 text-white ring-accent"
+                : "text-muted hover:text-white"
+            }`}
+          >
+            {t === "design" ? "🎨 Diseñar voz" : "🎙 Clonar voz"}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* ── Panel izquierdo: texto + voz ── */}
+        <div className="space-y-4">
+          {/* Texto */}
+          <div className="glass rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted uppercase tracking-widest">Texto</p>
+              <span className="text-xs text-muted">{text.length}/5000</span>
+            </div>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value.slice(0, 5000))}
+              rows={5}
+              placeholder="Escribí o pegá el texto que querés generar..."
+              className="w-full bg-transparent resize-none outline-none text-sm leading-relaxed placeholder:text-muted/50"
+            />
+            {/* Scripts de ejemplo */}
+            <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border">
+              {SAMPLE_SCRIPTS.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => setText(s)}
+                  className="text-xs px-2 py-1 glass glass-hover rounded-lg text-muted"
+                >
+                  Ejemplo {i + 1}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Idioma */}
+          <div className="glass rounded-2xl p-4 space-y-2">
+            <p className="text-xs text-muted uppercase tracking-widest">Idioma</p>
+            <div className="relative">
+              <button
+                onClick={() => setLangOpen(!langOpen)}
+                className="flex items-center gap-2 glass glass-hover rounded-xl px-3 py-2 text-sm w-full"
+              >
+                <span className="text-xl">{selectedLang.flag}</span>
+                <span>{selectedLang.label}</span>
+                <span className="ml-auto text-muted">{langOpen ? "▲" : "▼"}</span>
+              </button>
+              {langOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 glass rounded-xl z-20 overflow-hidden border border-border shadow-2xl">
+                  <div className="max-h-52 overflow-y-auto">
+                    {LANGUAGES.map((l) => (
+                      <button
+                        key={l.code}
+                        onClick={() => { setLang(l.code); setLangOpen(false); }}
+                        className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/5 transition-colors ${
+                          l.code === lang ? "bg-white/5 text-white" : "text-muted"
+                        }`}
+                      >
+                        <span className="text-lg">{l.flag}</span>
+                        <span>{l.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Panel de voz (diseño o clonación) */}
+          <div className="glass rounded-2xl p-4">
+            <p className="text-xs text-muted uppercase tracking-widest mb-3">
+              {tab === "design" ? "Diseño de voz" : "Voz de referencia"}
+            </p>
+            {tab === "design" ? (
+              <DesignPanel design={design} setDesign={setDesign} />
+            ) : (
+              <ClonePanel onAudio={setRefAudio} />
+            )}
+          </div>
+        </div>
+
+        {/* ── Panel derecho: generar + resultado ── */}
+        <div className="space-y-4 flex flex-col">
+          {/* Botón generar */}
+          <button
+            onClick={generate}
+            disabled={genState === "loading" || !text.trim()}
+            className={`btn-accent rounded-2xl py-5 text-lg font-semibold w-full ${
+              genState === "loading" ? "pulse-ring" : ""
+            }`}
+          >
+            {genState === "loading" ? (
+              <span className="flex items-center justify-center gap-3">
+                <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                  <path d="M12 2a10 10 0 0 1 10 10" />
+                </svg>
+                Generando…
+              </span>
+            ) : (
+              "✦ Generar voz"
+            )}
+          </button>
+
+          {/* Stats debajo del botón */}
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[
+              { label: "Idiomas", value: "600+" },
+              { label: "RTF", value: "0.025" },
+              { label: "Latencia", value: "<1s" },
+            ].map((s) => (
+              <div key={s.label} className="glass rounded-xl p-3">
+                <p className="text-xl font-bold text-gradient">{s.value}</p>
+                <p className="text-xs text-muted mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Resultado o estado vacío */}
+          {result ? (
+            <AudioPlayer result={result} onNew={() => { setResult(null); setGenState("idle"); }} />
+          ) : error ? (
+            <div className="glass rounded-2xl p-5 fade-up border border-red-500/20">
+              <p className="text-red-400 text-sm font-medium">⚠ Error</p>
+              <p className="text-muted text-xs mt-1">{error}</p>
+            </div>
+          ) : (
+            <div className="glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center flex-1 min-h-[180px]">
+              <div className="flex items-end gap-[3px] h-10 opacity-30">
+                {[30, 55, 80, 45, 90, 60, 75, 40, 85, 50].map((h, i) => (
+                  <div key={i} className="bar" style={{ height: `${h}%`, animationPlayState: "paused" }} />
+                ))}
+              </div>
+              <p className="text-muted text-sm">Tu audio aparecerá acá</p>
+            </div>
+          )}
+
+          {/* Tip */}
+          <div className="glass rounded-xl p-3 text-xs text-muted space-y-1">
+            <p className="text-white/60 font-medium">💡 Cómo sacar el máximo:</p>
+            <ul className="space-y-0.5 list-disc list-inside">
+              <li>Añadí <code>[laughter]</code> o <code>[sigh]</code> en el texto</li>
+              <li>Idioma mismatch = accent override (ej: subí voz en español, generá en inglés)</li>
+              <li>La voz de clonación mejora con +30s de audio limpio</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
