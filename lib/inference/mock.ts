@@ -59,16 +59,18 @@ export class MockProvider implements InferenceProvider {
   async generate(req: GenerateRequest): Promise<GenerateResult> {
     const seed = req.seed ?? hashString(req.text + req.language + req.mode);
 
-    // Duración ~ largo del texto (acotada 1.5s..8s)
+    // Duración ~ largo del texto (acotada 1.5s..8s), ajustada por speed
     const words = req.text.trim().split(/\s+/).filter(Boolean).length || 1;
-    const durationSec = Math.min(8, Math.max(1.5, words * 0.35));
+    const speed = req.speed && req.speed > 0 ? req.speed : 1;
+    const rawDuration = req.durationSec ?? Math.min(8, Math.max(1.5, words * 0.35)) / speed;
+    const durationSec = Math.min(20, Math.max(1, rawDuration));
     const n = Math.floor(durationSec * SAMPLE_RATE);
     const samples = new Float32Array(n);
 
     // Tónica según semilla / voz
     const base = 196 + (seed % 7) * 24; // ~G3..
     const scale = [0, 2, 4, 7, 9, 12]; // pentatónica mayor agradable
-    const isWhisper = req.design?.style === "whisper";
+    const isWhisper = req.design?.whisper === true;
 
     const notePeriod = Math.floor(SAMPLE_RATE * 0.32);
     for (let i = 0; i < n; i++) {

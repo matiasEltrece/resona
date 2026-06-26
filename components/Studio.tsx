@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { LANGUAGES, VOICE_PRESETS, SAMPLE_SCRIPTS } from "@/lib/catalog";
-import type { GenerateRequest, VoiceDesign } from "@/lib/inference/types";
+import {
+  LANGUAGES, VOICE_PRESETS, SAMPLE_SCRIPTS,
+  GENDER_OPTIONS, AGE_OPTIONS, PITCH_OPTIONS, ACCENT_OPTIONS, DIALECT_OPTIONS,
+  EXPRESSIVE_TAGS, QUALITY_OPTIONS, isEnglish, isChinese,
+} from "@/lib/catalog";
+import type { GenerateRequest, VoiceDesign, Quality } from "@/lib/inference/types";
 import ShareCard from "./ShareCard";
 
 /* ─── tipos locales ──────────────────────────────────────────────────────── */
@@ -53,11 +57,8 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
 
   const toggle = () => {
     if (!audioRef.current) return;
-    if (playing) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
+    if (playing) audioRef.current.pause();
+    else audioRef.current.play();
     setPlaying(!playing);
   };
 
@@ -87,12 +88,7 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
 
   return (
     <div className="glass rounded-2xl p-5 fade-up space-y-4">
-      <audio
-        ref={audioRef}
-        src={result.src}
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={handleEnded}
-      />
+      <audio ref={audioRef} src={result.src} onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} />
 
       <div className="flex items-center gap-4">
         <button
@@ -117,15 +113,9 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
       </div>
 
       <input
-        type="range"
-        min="0"
-        max="100"
-        value={progress}
-        onChange={seek}
+        type="range" min="0" max="100" value={progress} onChange={seek}
         className="seek-bar w-full"
-        style={{
-          background: `linear-gradient(to right, var(--accent-from) ${progress}%, rgba(255,255,255,0.12) ${progress}%)`,
-        }}
+        style={{ background: `linear-gradient(to right, var(--accent-from) ${progress}%, rgba(255,255,255,0.12) ${progress}%)` }}
       />
 
       <div className="flex items-center justify-between text-xs text-muted">
@@ -139,45 +129,30 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
           <span>{result.provider}</span>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={download}
-            className="px-3 py-1 glass glass-hover rounded-lg text-xs"
-            title="Descargar WAV"
-          >
-            ↓ WAV
-          </button>
-          <button
-            onClick={onNew}
-            className="px-3 py-1 glass glass-hover rounded-lg text-xs"
-          >
-            Nueva generación
-          </button>
+          <button onClick={download} className="px-3 py-1 glass glass-hover rounded-lg text-xs" title="Descargar WAV">↓ WAV</button>
+          <button onClick={onNew} className="px-3 py-1 glass glass-hover rounded-lg text-xs">Nueva generación</button>
         </div>
       </div>
     </div>
   );
 }
 
-function DesignPanel({
-  design,
-  setDesign,
+/* ─── Selector de pills genérico ─────────────────────────────────────────── */
+function Pills<T extends string>({
+  value, options, onChange,
 }: {
-  design: VoiceDesign;
-  setDesign: (d: VoiceDesign) => void;
+  value: T | undefined;
+  options: readonly { value: T; label: string }[];
+  onChange: (v: T) => void;
 }) {
-  const opt = <T extends string>(
-    key: keyof VoiceDesign,
-    options: { value: T; label: string }[],
-  ) => (
+  return (
     <div className="flex flex-wrap gap-2">
       {options.map((o) => (
         <button
           key={o.value}
-          onClick={() => setDesign({ ...design, [key]: o.value })}
+          onClick={() => onChange(o.value)}
           className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-            design[key] === o.value
-              ? "ring-accent text-white bg-white/10"
-              : "glass glass-hover text-muted"
+            value === o.value ? "ring-accent text-white bg-white/10" : "glass glass-hover text-muted"
           }`}
         >
           {o.label}
@@ -185,6 +160,17 @@ function DesignPanel({
       ))}
     </div>
   );
+}
+
+function DesignPanel({
+  design, setDesign, lang,
+}: {
+  design: VoiceDesign;
+  setDesign: (d: VoiceDesign) => void;
+  lang: string;
+}) {
+  const english = isEnglish(lang);
+  const chinese = isChinese(lang);
 
   return (
     <div className="space-y-4">
@@ -195,7 +181,7 @@ function DesignPanel({
           {VOICE_PRESETS.map((p) => (
             <button
               key={p.id}
-              onClick={() => setDesign(p.design as VoiceDesign)}
+              onClick={() => setDesign(p.design)}
               className={`glass glass-hover rounded-xl p-3 text-left transition-all ${
                 JSON.stringify(design) === JSON.stringify(p.design) ? "ring-accent" : ""
               }`}
@@ -208,7 +194,7 @@ function DesignPanel({
       </div>
 
       {/* Controles avanzados */}
-      <details className="group">
+      <details className="group" open>
         <summary className="text-xs text-muted uppercase tracking-widest cursor-pointer select-none flex items-center gap-2">
           <span>Ajuste fino</span>
           <span className="group-open:rotate-180 transition-transform">›</span>
@@ -216,47 +202,51 @@ function DesignPanel({
         <div className="mt-3 space-y-3">
           <div>
             <p className="text-xs text-muted mb-1.5">Género</p>
-            {opt("gender", [
-              { value: "female", label: "Femenina" },
-              { value: "male", label: "Masculina" },
-              { value: "neutral", label: "Neutra" },
-            ])}
+            <Pills value={design.gender} options={GENDER_OPTIONS} onChange={(v) => setDesign({ ...design, gender: v })} />
           </div>
           <div>
             <p className="text-xs text-muted mb-1.5">Edad</p>
-            {opt("age", [
-              { value: "child", label: "Niño/a" },
-              { value: "young", label: "Joven" },
-              { value: "adult", label: "Adulto/a" },
-              { value: "senior", label: "Mayor" },
-            ])}
+            <Pills value={design.age} options={AGE_OPTIONS} onChange={(v) => setDesign({ ...design, age: v })} />
           </div>
           <div>
             <p className="text-xs text-muted mb-1.5">Tono</p>
-            {opt("pitch", [
-              { value: "low", label: "Grave" },
-              { value: "medium", label: "Medio" },
-              { value: "high", label: "Agudo" },
-            ])}
+            <Pills value={design.pitch} options={PITCH_OPTIONS} onChange={(v) => setDesign({ ...design, pitch: v })} />
           </div>
-          <div>
-            <p className="text-xs text-muted mb-1.5">Estilo</p>
-            {opt("style", [
-              { value: "neutral", label: "Neutro" },
-              { value: "expressive", label: "Expresivo" },
-              { value: "narration", label: "Narración" },
-              { value: "whisper", label: "Susurro" },
-            ])}
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-1.5">Emoción</p>
-            {opt("emotion", [
-              { value: "neutral", label: "Neutro" },
-              { value: "happy", label: "Feliz" },
-              { value: "sad", label: "Triste" },
-              { value: "calm", label: "Calmo" },
-            ])}
-          </div>
+
+          {/* Acento — solo inglés */}
+          {english && (
+            <div>
+              <p className="text-xs text-muted mb-1.5">Acento <span className="opacity-50">(inglés)</span></p>
+              <Pills
+                value={design.accent}
+                options={ACCENT_OPTIONS}
+                onChange={(v) => setDesign({ ...design, accent: design.accent === v ? undefined : v })}
+              />
+            </div>
+          )}
+
+          {/* Dialecto — solo chino */}
+          {chinese && (
+            <div>
+              <p className="text-xs text-muted mb-1.5">Dialecto <span className="opacity-50">(chino)</span></p>
+              <Pills
+                value={design.dialect}
+                options={DIALECT_OPTIONS}
+                onChange={(v) => setDesign({ ...design, dialect: design.dialect === v ? undefined : v })}
+              />
+            </div>
+          )}
+
+          {/* Susurro */}
+          <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <input
+              type="checkbox"
+              checked={design.whisper ?? false}
+              onChange={(e) => setDesign({ ...design, whisper: e.target.checked })}
+              className="accent-[var(--accent-from)] w-4 h-4"
+            />
+            <span className={design.whisper ? "text-white" : "text-muted"}>Susurro (estilo ASMR)</span>
+          </label>
         </div>
       </details>
     </div>
@@ -264,9 +254,11 @@ function DesignPanel({
 }
 
 function ClonePanel({
-  onAudio,
+  onAudio, refText, setRefText,
 }: {
-  onAudio: (b64: string) => void;
+  onAudio: (b64: string | undefined) => void;
+  refText: string;
+  setRefText: (t: string) => void;
 }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -276,8 +268,7 @@ function ClonePanel({
     const reader = new FileReader();
     reader.onload = (e) => {
       const url = e.target?.result as string;
-      const b64 = url.split(",")[1];
-      onAudio(b64);
+      onAudio(url.split(",")[1]);
       setFileName(file.name);
     };
     reader.readAsDataURL(file);
@@ -302,10 +293,7 @@ function ClonePanel({
         }`}
       >
         <input
-          ref={inputRef}
-          type="file"
-          accept="audio/*"
-          className="hidden"
+          ref={inputRef} type="file" accept="audio/*" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) readFile(f); }}
         />
         <div className="text-3xl mb-2">🎙</div>
@@ -321,6 +309,20 @@ function ClonePanel({
           </>
         )}
       </div>
+
+      {/* Transcripción opcional */}
+      <div>
+        <p className="text-xs text-muted mb-1.5">
+          Transcripción del audio <span className="opacity-50">(opcional)</span>
+        </p>
+        <input
+          value={refText}
+          onChange={(e) => setRefText(e.target.value)}
+          placeholder="Si la dejás vacía, la transcribimos automáticamente"
+          className="w-full glass rounded-xl px-3 py-2 text-sm bg-transparent outline-none placeholder:text-muted/50"
+        />
+      </div>
+
       <p className="text-xs text-muted">
         El modelo aprende el timbre de esa voz y la reproduce en el texto que escribas, en cualquier idioma.
       </p>
@@ -332,10 +334,8 @@ function ClonePanel({
 
 const DEFAULT_DESIGN: VoiceDesign = {
   gender: "female",
-  age: "adult",
-  pitch: "medium",
-  style: "narration",
-  emotion: "calm",
+  age: "young_adult",
+  pitch: "moderate",
 };
 
 export default function Studio() {
@@ -344,12 +344,31 @@ export default function Studio() {
   const [lang, setLang] = useState("es-AR");
   const [design, setDesign] = useState<VoiceDesign>(DEFAULT_DESIGN);
   const [refAudio, setRefAudio] = useState<string | undefined>();
+  const [refText, setRefText] = useState("");
+  const [speed, setSpeed] = useState(1);
+  const [quality, setQuality] = useState<Quality>("balanced");
   const [genState, setGenState] = useState<GenState>("idle");
   const [result, setResult] = useState<AudioResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [langOpen, setLangOpen] = useState(false);
+  const textRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedLang = LANGUAGES.find((l) => l.code === lang) ?? LANGUAGES[0];
+
+  /** Inserta un tag expresivo en la posición del cursor. */
+  const insertTag = (tag: string) => {
+    const el = textRef.current;
+    if (!el) { setText((t) => `${t} ${tag}`); return; }
+    const start = el.selectionStart ?? text.length;
+    const end = el.selectionEnd ?? text.length;
+    const next = `${text.slice(0, start)}${tag}${text.slice(end)}`.slice(0, 5000);
+    setText(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + tag.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
 
   const generate = useCallback(async () => {
     if (!text.trim() || genState === "loading") return;
@@ -363,6 +382,9 @@ export default function Studio() {
       mode: tab === "clone" && refAudio ? "clone" : "design",
       design: tab === "design" ? design : undefined,
       referenceAudioBase64: tab === "clone" ? refAudio : undefined,
+      referenceText: tab === "clone" && refText.trim() ? refText.trim() : undefined,
+      speed,
+      quality,
     };
 
     try {
@@ -385,7 +407,7 @@ export default function Studio() {
       setError(e instanceof Error ? e.message : "Error desconocido");
       setGenState("error");
     }
-  }, [text, lang, tab, design, refAudio, genState]);
+  }, [text, lang, tab, design, refAudio, refText, speed, quality, genState]);
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -397,9 +419,7 @@ export default function Studio() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-              tab === t
-                ? "bg-white/10 text-white ring-accent"
-                : "text-muted hover:text-white"
+              tab === t ? "bg-white/10 text-white ring-accent" : "text-muted hover:text-white"
             }`}
           >
             {t === "design" ? "🎨 Diseñar voz" : "🎙 Clonar voz"}
@@ -408,7 +428,7 @@ export default function Studio() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* ── Panel izquierdo: texto + voz ── */}
+        {/* ── Panel izquierdo ── */}
         <div className="space-y-4">
           {/* Texto */}
           <div className="glass rounded-2xl p-4">
@@ -417,12 +437,31 @@ export default function Studio() {
               <span className="text-xs text-muted">{text.length}/5000</span>
             </div>
             <textarea
+              ref={textRef}
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, 5000))}
               rows={5}
               placeholder="Escribí o pegá el texto que querés generar..."
               className="w-full bg-transparent resize-none outline-none text-sm leading-relaxed placeholder:text-muted/50"
             />
+
+            {/* Toolbar de tags expresivos */}
+            <div className="mt-2 pt-2 border-t border-border">
+              <p className="text-[10px] text-muted uppercase tracking-widest mb-1.5">Efectos expresivos</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EXPRESSIVE_TAGS.map((t) => (
+                  <button
+                    key={t.tag}
+                    onClick={() => insertTag(t.tag)}
+                    title={`Insertar ${t.tag}`}
+                    className="text-xs px-2 py-1 glass glass-hover rounded-lg text-muted hover:text-white"
+                  >
+                    {t.emoji} {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Scripts de ejemplo */}
             <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border">
               {SAMPLE_SCRIPTS.map((s, i) => (
@@ -439,7 +478,7 @@ export default function Studio() {
 
           {/* Idioma */}
           <div className="glass rounded-2xl p-4 space-y-2">
-            <p className="text-xs text-muted uppercase tracking-widest">Idioma</p>
+            <p className="text-xs text-muted uppercase tracking-widest">Idioma <span className="opacity-50">· 646 disponibles</span></p>
             <div className="relative">
               <button
                 onClick={() => setLangOpen(!langOpen)}
@@ -470,28 +509,67 @@ export default function Studio() {
             </div>
           </div>
 
-          {/* Panel de voz (diseño o clonación) */}
+          {/* Panel de voz */}
           <div className="glass rounded-2xl p-4">
             <p className="text-xs text-muted uppercase tracking-widest mb-3">
               {tab === "design" ? "Diseño de voz" : "Voz de referencia"}
             </p>
             {tab === "design" ? (
-              <DesignPanel design={design} setDesign={setDesign} />
+              <DesignPanel design={design} setDesign={setDesign} lang={lang} />
             ) : (
-              <ClonePanel onAudio={setRefAudio} />
+              <ClonePanel onAudio={setRefAudio} refText={refText} setRefText={setRefText} />
             )}
+          </div>
+
+          {/* Ajustes de generación */}
+          <div className="glass rounded-2xl p-4 space-y-4">
+            <p className="text-xs text-muted uppercase tracking-widest">Ajustes</p>
+
+            {/* Velocidad */}
+            <div>
+              <div className="flex justify-between text-xs mb-1.5">
+                <span className="text-muted">Velocidad</span>
+                <span className="text-white font-mono">{speed.toFixed(2)}×</span>
+              </div>
+              <input
+                type="range" min="0.5" max="2" step="0.05" value={speed}
+                onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                className="seek-bar w-full"
+                style={{ background: `linear-gradient(to right, var(--accent-from) ${((speed - 0.5) / 1.5) * 100}%, rgba(255,255,255,0.12) ${((speed - 0.5) / 1.5) * 100}%)` }}
+              />
+              <div className="flex justify-between text-[10px] text-muted mt-0.5">
+                <span>Lento</span><span>Normal</span><span>Rápido</span>
+              </div>
+            </div>
+
+            {/* Calidad */}
+            <div>
+              <p className="text-xs text-muted mb-1.5">Calidad</p>
+              <div className="grid grid-cols-3 gap-2">
+                {QUALITY_OPTIONS.map((q) => (
+                  <button
+                    key={q.value}
+                    onClick={() => setQuality(q.value)}
+                    title={q.desc}
+                    className={`rounded-xl p-2 text-center transition-all ${
+                      quality === q.value ? "ring-accent bg-white/10" : "glass glass-hover"
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{q.label}</p>
+                    <p className="text-[10px] text-muted mt-0.5">{q.desc.split("·")[0].trim()}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* ── Panel derecho: generar + resultado ── */}
+        {/* ── Panel derecho ── */}
         <div className="space-y-4 flex flex-col">
-          {/* Botón generar */}
           <button
             onClick={generate}
             disabled={genState === "loading" || !text.trim()}
-            className={`btn-accent rounded-2xl py-5 text-lg font-semibold w-full ${
-              genState === "loading" ? "pulse-ring" : ""
-            }`}
+            className={`btn-accent rounded-2xl py-5 text-lg font-semibold w-full ${genState === "loading" ? "pulse-ring" : ""}`}
           >
             {genState === "loading" ? (
               <span className="flex items-center justify-center gap-3">
@@ -509,10 +587,9 @@ export default function Studio() {
             )}
           </button>
 
-          {/* Stats debajo del botón */}
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
-              { label: "Idiomas", value: "600+" },
+              { label: "Idiomas", value: "646" },
               { label: "RTF", value: "0.025" },
               { label: "Latencia", value: "<1s" },
             ].map((s) => (
@@ -523,16 +600,10 @@ export default function Studio() {
             ))}
           </div>
 
-          {/* Resultado o estado vacío */}
           {result ? (
             <>
               <AudioPlayer result={result} onNew={() => { setResult(null); setGenState("idle"); }} />
-              <ShareCard
-                audioSrc={result.src}
-                text={text}
-                language={selectedLang.label}
-                mode={tab}
-              />
+              <ShareCard audioSrc={result.src} text={text} language={selectedLang.label} mode={tab} />
             </>
           ) : error ? (
             <div className="glass rounded-2xl p-5 fade-up border border-red-500/20 space-y-2">
@@ -560,8 +631,8 @@ export default function Studio() {
           <div className="glass rounded-xl p-3 text-xs text-muted space-y-1">
             <p className="text-white/60 font-medium">💡 Cómo sacar el máximo:</p>
             <ul className="space-y-0.5 list-disc list-inside">
-              <li>Añadí <code>[laughter]</code> o <code>[sigh]</code> en el texto</li>
-              <li>Idioma mismatch = accent override (ej: subí voz en español, generá en inglés)</li>
+              <li>Insertá efectos como <code>[laughter]</code> o <code>[sigh]</code> con los botones</li>
+              <li>Acentos del inglés: cambiá el idioma a English para habilitarlos</li>
               <li>La voz de clonación mejora con +30s de audio limpio</li>
             </ul>
           </div>

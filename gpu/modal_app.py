@@ -1,19 +1,19 @@
 """
 Kyma — GPU backend en Modal
 ============================
-Despliega OmniVoice como endpoint serverless. Se prende cuando llega un
-request y se apaga solo → pagás solo por uso real.
+Despliega OmniVoice como endpoint serverless con TODAS las capacidades del
+modelo expuestas: voice clone, voice design (instruct completo), tags
+expresivos, control de velocidad/duración, calidad ajustable y multi-idioma.
 
-PRERREQUISITOS
+DEPLOY
+------
+1. pip install modal
+2. modal token set ...   (ya hecho)
+3. modal deploy gpu/modal_app.py
+   → copiá la URL en Vercel como OMNIVOICE_ENDPOINT
+
+VARS EN VERCEL
 --------------
-1. Crear cuenta en modal.com (gratis, incluye $30/mes de crédito)
-2. pip install modal
-3. modal setup           (autentica tu cuenta)
-4. modal deploy gpu/modal_app.py
-   → te da la URL del endpoint; copiala en Vercel como OMNIVOICE_ENDPOINT
-
-VARS EN VERCEL DESPUÉS DEL DEPLOY
------------------------------------
 INFERENCE_PROVIDER=modal
 OMNIVOICE_ENDPOINT=https://<workspace>--kyma-generate.modal.run
 """
@@ -34,28 +34,86 @@ image = (
         "torchaudio==2.4.0",
         extra_index_url="https://download.pytorch.org/whl/cu121",
     )
-    .pip_install(
-        "omnivoice",
-        "soundfile",
-        "numpy",
-    )
+    .pip_install("omnivoice", "soundfile", "numpy")
 )
 
 app = modal.App("kyma", image=image)
-
-# Volumen para cachear pesos (~20 GB). Se descarga una sola vez.
 model_cache = modal.Volume.from_name("kyma-model-cache", create_if_missing=True)
 
 SAMPLE_RATE = 24000  # OmniVoice genera a 24 kHz
 
+# ─── Mapeos UI → vocabulario real de OmniVoice ────────────────────────────
+# (ver omnivoice/utils/voice_design.py)
+AGE_MAP = {
+    "child": "child",
+    "teenager": "teenager",
+    "young_adult": "young adult",
+    "middle_aged": "middle-aged",
+    "elderly": "elderly",
+}
+PITCH_MAP = {
+    "very_low": "very low pitch",
+    "low": "low pitch",
+    "moderate": "moderate pitch",
+    "high": "high pitch",
+    "very_high": "very high pitch",
+}
+ACCENT_MAP = {
+    "american": "american accent",
+    "british": "british accent",
+    "australian": "australian accent",
+    "canadian": "canadian accent",
+    "indian": "indian accent",
+    "korean": "korean accent",
+    "chinese": "chinese accent",
+    "japanese": "japanese accent",
+    "portuguese": "portuguese accent",
+    "russian": "russian accent",
+}
+QUALITY_STEPS = {"fast": 16, "balanced": 24, "high": 32}
 
-# ─── Clase del modelo ─────────────────────────────────────────────────────
+
+def build_instruct(design: dict, language: str) -> str:
+    """Construye el string `instruct` que OmniVoice espera, respetando las
+    reglas: acentos solo en inglés, dialectos solo en chino, un valor por
+    categoría."""
+    parts = []
+
+    gender = design.get("gender")
+    if gender in ("male", "female"):
+        parts.append(gender)
+
+    age = AGE_MAP.get(design.get("age", ""))
+    if age:
+        parts.append(age)
+
+    pitch = PITCH_MAP.get(design.get("pitch", ""))
+    if pitch:
+        parts.append(pitch)
+
+    if design.get("whisper"):
+        parts.append("whisper")
+
+    is_english = language.startswith("en")
+    is_chinese = language.startswith("zh")
+
+    # Acento solo si el idioma es inglés
+    if is_english and design.get("accent"):
+        accent = ACCENT_MAP.get(design["accent"])
+        if accent:
+            parts.append(accent)
+
+    # Dialecto chino solo si el idioma es chino (ya viene en chino, va tal cual)
+    if is_chinese and design.get("dialect"):
+        parts.append(design["dialect"])
+
+    return ", ".join(parts) if parts else "female, moderate pitch"
+
+
 @app.cls(
-    gpu="A10G",               # 24 GB VRAM — recomendado para OmniVoice
-    # gpu="T4",               # 16 GB — más barato, puede quedarse sin VRAM
+    gpu="A10G",
     volumes={"/model_cache": model_cache},
-    scaledown_window=300,     # se apaga a los 5 min sin requests
-    max_inputs=10,
+    scaledown_window=300,
 )
 class OmniVoiceModel:
 
@@ -69,75 +127,69 @@ class OmniVoiceModel:
             cache_dir="/model_cache",
             device_map="cuda:0",
             dtype=torch.float16,
-            load_asr=True,    # Whisper integrado → ref_text es opcional en clone
+            load_asr=True,  # Whisper integrado → ref_text opcional al clonar
         )
 
     @modal.method()
-    def generate(
-        self,
-        text: str,
-        language: str = "es",
-        mode: str = "design",
-        design: dict | None = None,
-        reference_audio: str | None = None,   # base64 WAV/MP3
-        seed: int | None = None,
-    ) -> dict:
-        import numpy as np
-        import soundfile as sf
+    def generate(self, payload: dict) -> dict:
         import torch
+        import soundfile as sf
+
+        text = payload["text"]
+        language = payload.get("language", "es")
+        mode = payload.get("mode", "design")
+        design = payload.get("design") or {}
+        reference_audio = payload.get("reference_audio")
+        reference_text = payload.get("reference_text")
+        speed = payload.get("speed")
+        duration = payload.get("duration_sec")
+        quality = payload.get("quality", "balanced")
+        seed = payload.get("seed")
 
         start = time.perf_counter()
 
-        kwargs: dict = {"text": text}
-
         if seed is not None:
-            torch.manual_seed(seed)
+            torch.manual_seed(int(seed))
 
+        kwargs: dict = {
+            "text": text,
+            "num_step": QUALITY_STEPS.get(quality, 24),
+        }
+
+        # OmniVoice resuelve el idioma por código o nombre; mandamos el código
+        # base (sin región) que es lo que el modelo entiende.
+        kwargs["language"] = language.split("-")[0]
+
+        if speed is not None:
+            kwargs["speed"] = float(speed)
+        if duration is not None:
+            kwargs["duration"] = float(duration)
+
+        ref_path = None
         if mode == "clone" and reference_audio:
-            # Escribimos el audio de referencia a un archivo temporal
             ref_bytes = base64.b64decode(reference_audio)
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
                 f.write(ref_bytes)
                 ref_path = f.name
             kwargs["ref_audio"] = ref_path
-            # ref_text omitido → Whisper lo transcribe automáticamente
+            if reference_text:
+                kwargs["ref_text"] = reference_text
+            # sin ref_text → Whisper lo transcribe solo
+        else:
+            kwargs["instruct"] = build_instruct(design, language)
 
-        elif mode == "design" and design:
-            # Construimos el string de instrucción para voice design
-            parts = []
-            if design.get("gender"):
-                parts.append(design["gender"])
-            if design.get("age") and design["age"] != "adult":
-                parts.append(design["age"])
-            if design.get("pitch") and design["pitch"] != "medium":
-                pitch_map = {
-                    "very_low": "very low pitch",
-                    "low": "low pitch",
-                    "high": "high pitch",
-                    "very_high": "very high pitch",
-                }
-                parts.append(pitch_map.get(design["pitch"], design["pitch"] + " pitch"))
-            if design.get("style") and design["style"] not in ("narration", ""):
-                parts.append(design["style"])
-            if design.get("emotion") and design["emotion"] != "neutral":
-                parts.append(design["emotion"])
-            kwargs["instruct"] = ", ".join(parts) if parts else "female, moderate pitch"
-
-        # Síntesis
         audio_list = self.model.generate(**kwargs)
-        audio_array = audio_list[0]  # numpy float32, forma (T,)
+        audio_array = audio_list[0]
 
-        # Limpieza del archivo temporal
-        if "ref_audio" in kwargs:
+        if ref_path:
             try:
-                os.unlink(kwargs["ref_audio"])
+                os.unlink(ref_path)
             except OSError:
                 pass
 
         elapsed = time.perf_counter() - start
         duration_sec = len(audio_array) / SAMPLE_RATE
 
-        # Convertir numpy → WAV en memoria
         buf = io.BytesIO()
         sf.write(buf, audio_array, SAMPLE_RATE, format="WAV", subtype="PCM_16")
         wav_bytes = buf.getvalue()
@@ -150,34 +202,24 @@ class OmniVoiceModel:
         }
 
 
-# ─── Endpoint HTTP ────────────────────────────────────────────────────────
 @app.function()
-@modal.web_endpoint(method="POST")
+@modal.fastapi_endpoint(method="POST")
 def generate(request: dict) -> dict:
     """
     POST /
     {
-        "text": "...",
-        "language": "es",
-        "mode": "design" | "clone",
-        "design": { "gender": "female", "age": "adult", "pitch": "medium",
-                    "style": "narration", "emotion": "neutral" },
-        "reference_audio": "<base64 WAV>",
-        "seed": 42
+      "text": "Hola [laughter] mundo",
+      "language": "es",
+      "mode": "design" | "clone",
+      "design": { "gender","age","pitch","whisper","accent","dialect" },
+      "reference_audio": "<base64 WAV>",
+      "reference_text": "transcripción opcional",
+      "speed": 1.0,
+      "duration_sec": null,
+      "quality": "fast" | "balanced" | "high",
+      "seed": 42
     }
-    → {
-        "audio_base64": "...",
-        "mime": "audio/wav",
-        "duration_ms": 3200,
-        "rtf": 0.025
-    }
+    → { "audio_base64", "mime", "duration_ms", "rtf" }
     """
     model = OmniVoiceModel()
-    return model.generate.remote(
-        text=request["text"],
-        language=request.get("language", "es"),
-        mode=request.get("mode", "design"),
-        design=request.get("design"),
-        reference_audio=request.get("reference_audio"),
-        seed=request.get("seed"),
-    )
+    return model.generate.remote(request)
