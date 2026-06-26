@@ -1,7 +1,8 @@
-import { brand } from "@/lib/brand";
+import BuyButton from "./BuyButton";
 
 const plans = [
   {
+    id: "free",
     name: "Gratis",
     price: "$0",
     period: "siempre",
@@ -17,8 +18,10 @@ const plans = [
     missing: ["Voice cloning", "Audio HD sin marca", "API access", "Prioridad en cola"],
     cta: "Empezar gratis",
     ctaHref: "#studio",
+    buyUrl: undefined,
   },
   {
+    id: "creator",
     name: "Creator",
     price: "$12",
     period: "/ mes",
@@ -34,10 +37,12 @@ const plans = [
       "Prioridad en cola",
     ],
     missing: ["API access"],
-    cta: "Empezar prueba gratis",
-    ctaHref: "#studio",
+    cta: "Suscribirme",
+    ctaHref: null,
+    buyUrl: process.env.NEXT_PUBLIC_LEMON_CREATOR_BUY_URL,
   },
   {
+    id: "pro",
     name: "Pro",
     price: "$39",
     period: "/ mes",
@@ -54,8 +59,9 @@ const plans = [
       "Soporte prioritario",
     ],
     missing: [],
-    cta: "Contactar ventas",
-    ctaHref: `mailto:hola@${brand.domain}?subject=Plan Pro`,
+    cta: "Suscribirme",
+    ctaHref: null,
+    buyUrl: process.env.NEXT_PUBLIC_LEMON_PRO_BUY_URL,
   },
 ] as const;
 
@@ -119,16 +125,26 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <a
-                href={plan.ctaHref}
-                className={`text-center py-3 rounded-xl text-sm font-semibold transition-all ${
-                  plan.highlight
-                    ? "btn-accent"
-                    : "glass glass-hover"
-                }`}
-              >
-                {plan.cta}
-              </a>
+              {plan.ctaHref ? (
+                <a
+                  href={plan.ctaHref}
+                  className={`text-center py-3 rounded-xl text-sm font-semibold transition-all ${
+                    plan.highlight ? "btn-accent" : "glass glass-hover"
+                  }`}
+                >
+                  {plan.cta}
+                </a>
+              ) : (
+                <BuyButton
+                  buyUrl={plan.buyUrl}
+                  planId={plan.id}
+                  className={`text-center py-3 rounded-xl text-sm font-semibold transition-all w-full ${
+                    plan.highlight ? "btn-accent" : "glass glass-hover"
+                  }`}
+                >
+                  {plan.cta}
+                </BuyButton>
+              )}
             </div>
           ))}
         </div>
