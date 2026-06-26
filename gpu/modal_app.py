@@ -1,6 +1,6 @@
 """
-Resona — GPU backend en Modal
-==============================
+Kyma — GPU backend en Modal
+============================
 Despliega OmniVoice como endpoint serverless. Se prende cuando llega un
 request y se apaga solo → pagás solo por uso real.
 
@@ -10,55 +10,66 @@ PRERREQUISITOS
 2. pip install modal
 3. modal setup           (autentica tu cuenta)
 4. modal deploy gpu/modal_app.py
-   → te da la URL del endpoint, copiala en .env.local como OMNIVOICE_ENDPOINT
+   → te da la URL del endpoint; copiala en Vercel como OMNIVOICE_ENDPOINT
 
-CONFIGURACIÓN EN .env.local
------------------------------
+VARS EN VERCEL DESPUÉS DEL DEPLOY
+-----------------------------------
 INFERENCE_PROVIDER=modal
-OMNIVOICE_ENDPOINT=https://<tu-workspace>--resona-generate.modal.run
-OMNIVOICE_API_KEY=          # opcional — ver sección de seguridad abajo
+OMNIVOICE_ENDPOINT=https://<workspace>--kyma-generate.modal.run
 """
 
 import base64
 import io
 import os
+import tempfile
 import time
 
 import modal
 
-# ─── Imagen de Docker con dependencias ────────────────────────────────────
-# Modal construye la imagen una vez y la cachea. Cambios acá requieren rebuild.
+# ─── Imagen Docker ────────────────────────────────────────────────────────
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
-        "torch==2.8.0",
-        "torchaudio==2.8.0",
-        extra_index_url="https://download.pytorch.org/whl/cu128",
+        "torch==2.4.0",
+        "torchaudio==2.4.0",
+        extra_index_url="https://download.pytorch.org/whl/cu121",
     )
-    .pip_install("omnivoice")  # instala desde PyPI
+    .pip_install(
+        "omnivoice",
+        "soundfile",
+        "numpy",
+    )
 )
 
-# ─── App Modal ────────────────────────────────────────────────────────────
-app = modal.App("resona", image=image)
+app = modal.App("kyma", image=image)
 
-# Volumen persistente para cachear los pesos (evita re-descargar en cada cold-start)
-model_cache = modal.Volume.from_name("resona-model-cache", create_if_missing=True)
+# Volumen para cachear pesos (~20 GB). Se descarga una sola vez.
+model_cache = modal.Volume.from_name("kyma-model-cache", create_if_missing=True)
+
+SAMPLE_RATE = 24000  # OmniVoice genera a 24 kHz
+
 
 # ─── Clase del modelo ─────────────────────────────────────────────────────
 @app.cls(
-    gpu="A10G",          # 24 GB VRAM · ~$0.00030/s en RunPod, ~$0.00044 en Modal
-    # gpu="T4",          # más barato (16 GB) — descomentá para bajar costo si el modelo entra
+    gpu="A10G",               # 24 GB VRAM — recomendado para OmniVoice
+    # gpu="T4",               # 16 GB — más barato, puede quedarse sin VRAM
     volumes={"/model_cache": model_cache},
-    scaledown_window=300,      # se apaga si no hay requests por 5 minutos
-    max_inputs=20,             # cola máxima por instancia
+    scaledown_window=300,     # se apaga a los 5 min sin requests
+    max_inputs=10,
 )
 class OmniVoiceModel:
+
     @modal.enter()
     def load(self):
-        """Se ejecuta una vez al arrancar el container (cold-start)."""
-        import omnivoice
-        self.model = omnivoice.load(
-            cache_dir="/model_cache",  # reutiliza pesos descargados
+        import torch
+        from omnivoice import OmniVoice
+
+        self.model = OmniVoice.from_pretrained(
+            "k2-fsa/OmniVoice",
+            cache_dir="/model_cache",
+            device_map="cuda:0",
+            dtype=torch.float16,
+            load_asr=True,    # Whisper integrado → ref_text es opcional en clone
         )
 
     @modal.method()
@@ -68,48 +79,68 @@ class OmniVoiceModel:
         language: str = "es",
         mode: str = "design",
         design: dict | None = None,
-        reference_audio: str | None = None,  # base64
+        reference_audio: str | None = None,   # base64 WAV/MP3
         seed: int | None = None,
     ) -> dict:
-        import omnivoice
+        import numpy as np
+        import soundfile as sf
+        import torch
 
         start = time.perf_counter()
 
-        params = dict(
-            text=text,
-            language=language,
-            seed=seed,
-        )
+        kwargs: dict = {"text": text}
+
+        if seed is not None:
+            torch.manual_seed(seed)
 
         if mode == "clone" and reference_audio:
-            # Decodificamos el audio de referencia que viene en base64
+            # Escribimos el audio de referencia a un archivo temporal
             ref_bytes = base64.b64decode(reference_audio)
-            params["reference_audio"] = ref_bytes
-        elif design:
-            params.update({
-                "gender": design.get("gender", "female"),
-                "age": design.get("age", "adult"),
-                "pitch": design.get("pitch", "medium"),
-                "style": design.get("style", "narration"),
-                "emotion": design.get("emotion", "neutral"),
-            })
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+                f.write(ref_bytes)
+                ref_path = f.name
+            kwargs["ref_audio"] = ref_path
+            # ref_text omitido → Whisper lo transcribe automáticamente
 
-        # OmniVoice devuelve un array numpy (float32, mono)
-        audio_array, sample_rate = self.model.synthesize(**params)
+        elif mode == "design" and design:
+            # Construimos el string de instrucción para voice design
+            parts = []
+            if design.get("gender"):
+                parts.append(design["gender"])
+            if design.get("age") and design["age"] != "adult":
+                parts.append(design["age"])
+            if design.get("pitch") and design["pitch"] != "medium":
+                pitch_map = {
+                    "very_low": "very low pitch",
+                    "low": "low pitch",
+                    "high": "high pitch",
+                    "very_high": "very high pitch",
+                }
+                parts.append(pitch_map.get(design["pitch"], design["pitch"] + " pitch"))
+            if design.get("style") and design["style"] not in ("narration", ""):
+                parts.append(design["style"])
+            if design.get("emotion") and design["emotion"] != "neutral":
+                parts.append(design["emotion"])
+            kwargs["instruct"] = ", ".join(parts) if parts else "female, moderate pitch"
 
-        # Convertimos a WAV en memoria
-        import wave, struct
-        buf = io.BytesIO()
-        with wave.open(buf, "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)
-            wf.setframerate(sample_rate)
-            pcm = [max(-32768, min(32767, int(s * 32767))) for s in audio_array]
-            wf.writeframes(struct.pack(f"<{len(pcm)}h", *pcm))
+        # Síntesis
+        audio_list = self.model.generate(**kwargs)
+        audio_array = audio_list[0]  # numpy float32, forma (T,)
 
-        wav_bytes = buf.getvalue()
+        # Limpieza del archivo temporal
+        if "ref_audio" in kwargs:
+            try:
+                os.unlink(kwargs["ref_audio"])
+            except OSError:
+                pass
+
         elapsed = time.perf_counter() - start
-        duration_sec = len(audio_array) / sample_rate
+        duration_sec = len(audio_array) / SAMPLE_RATE
+
+        # Convertir numpy → WAV en memoria
+        buf = io.BytesIO()
+        sf.write(buf, audio_array, SAMPLE_RATE, format="WAV", subtype="PCM_16")
+        wav_bytes = buf.getvalue()
 
         return {
             "audio_base64": base64.b64encode(wav_bytes).decode(),
@@ -124,15 +155,14 @@ class OmniVoiceModel:
 @modal.web_endpoint(method="POST")
 def generate(request: dict) -> dict:
     """
-    Contrato del endpoint (mismo esquema que espera lib/inference/modal.ts):
-
     POST /
     {
         "text": "...",
         "language": "es",
         "mode": "design" | "clone",
-        "design": { gender, age, pitch, style, emotion },
-        "reference_audio": "<base64>",
+        "design": { "gender": "female", "age": "adult", "pitch": "medium",
+                    "style": "narration", "emotion": "neutral" },
+        "reference_audio": "<base64 WAV>",
         "seed": 42
     }
     → {
@@ -142,11 +172,6 @@ def generate(request: dict) -> dict:
         "rtf": 0.025
     }
     """
-    # Protección básica por API key (opcional)
-    # api_key = os.environ.get("OMNIVOICE_API_KEY")
-    # if api_key and request.get("_auth") != api_key:
-    #     raise modal.exception.InvalidError("Unauthorized")
-
     model = OmniVoiceModel()
     return model.generate.remote(
         text=request["text"],
