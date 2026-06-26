@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { LANGUAGES, VOICE_PRESETS, SAMPLE_SCRIPTS } from "@/lib/catalog";
 import type { GenerateRequest, VoiceDesign } from "@/lib/inference/types";
+import ShareCard from "./ShareCard";
 
 /* ─── tipos locales ──────────────────────────────────────────────────────── */
 type Tab = "design" | "clone";
@@ -521,7 +522,15 @@ export default function Studio() {
 
           {/* Resultado o estado vacío */}
           {result ? (
-            <AudioPlayer result={result} onNew={() => { setResult(null); setGenState("idle"); }} />
+            <>
+              <AudioPlayer result={result} onNew={() => { setResult(null); setGenState("idle"); }} />
+              <ShareCard
+                audioSrc={result.src}
+                text={text}
+                language={selectedLang.label}
+                mode={tab}
+              />
+            </>
           ) : error ? (
             <div className="glass rounded-2xl p-5 fade-up border border-red-500/20">
               <p className="text-red-400 text-sm font-medium">⚠ Error</p>
