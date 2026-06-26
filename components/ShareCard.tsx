@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { brand } from "@/lib/brand";
 
 interface ShareCardProps {
   audioSrc: string;
@@ -13,11 +14,11 @@ export default function ShareCard({ audioSrc, text, language, mode }: ShareCardP
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
 
-  const SITE_URL = "https://kyma.synthetic.com.ar";
+  const SITE_URL = `https://${brand.domain}`;
 
-  const shareText = `Generé esta voz con IA en segundos con Kyma 🎙✨\n${
+  const shareText = `Generé esta voz con IA en segundos con ${brand.name} 🎙✨\n${
     mode === "clone" ? "Cloné mi propia voz" : "Diseñé una voz desde cero"
-  } en ${language} — probalo gratis en kyma.synthetic.com.ar`;
+  } en ${language} — probalo gratis en ${brand.domain}`;
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(`${SITE_URL}?ref=share`);
