@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   LANGUAGES, VOICE_PRESETS, SAMPLE_SCRIPTS,
   GENDER_OPTIONS, AGE_OPTIONS, PITCH_OPTIONS, ACCENT_OPTIONS, DIALECT_OPTIONS,
@@ -253,15 +253,31 @@ function DesignPanel({
   );
 }
 
+interface SavedVoice {
+  id: string;
+  name: string;
+  ref_text: string | null;
+  language: string | null;
+  created_at: string;
+}
+
 function ClonePanel({
-  onAudio, refText, setRefText,
+  onAudio, refText, setRefText, currentAudio,
+  savedVoices, selectedVoiceId, onSelectVoice, onVoicesChanged,
 }: {
   onAudio: (b64: string | undefined) => void;
   refText: string;
   setRefText: (t: string) => void;
+  currentAudio: string | undefined;
+  savedVoices: SavedVoice[];
+  selectedVoiceId: string | null;
+  onSelectVoice: (id: string | null) => void;
+  onVoicesChanged: () => void;
 }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveName, setSaveName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const readFile = (file: File) => {
@@ -270,6 +286,7 @@ function ClonePanel({
       const url = e.target?.result as string;
       onAudio(url.split(",")[1]);
       setFileName(file.name);
+      onSelectVoice(null); // subir audio nuevo deselecciona voz guardada
     };
     reader.readAsDataURL(file);
   };
@@ -281,8 +298,64 @@ function ClonePanel({
     if (file && file.type.startsWith("audio/")) readFile(file);
   };
 
+  const saveVoice = async () => {
+    if (!saveName.trim() || !currentAudio) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/voices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: saveName.trim(), audioBase64: currentAudio, refText }),
+      });
+      if (res.ok) {
+        setSaveName("");
+        onVoicesChanged();
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteVoice = async (id: string) => {
+    await fetch(`/api/voices/${id}`, { method: "DELETE" });
+    if (selectedVoiceId === id) onSelectVoice(null);
+    onVoicesChanged();
+  };
+
   return (
     <div className="space-y-3">
+      {/* Mis voces guardadas */}
+      {savedVoices.length > 0 && (
+        <div>
+          <p className="text-xs text-muted mb-1.5 uppercase tracking-widest">Mis voces</p>
+          <div className="flex flex-wrap gap-1.5">
+            {savedVoices.map((v) => (
+              <span
+                key={v.id}
+                className={`group flex items-center gap-1 rounded-lg text-sm transition-all ${
+                  selectedVoiceId === v.id ? "ring-accent bg-white/10" : "glass glass-hover"
+                }`}
+              >
+                <button
+                  onClick={() => { onSelectVoice(v.id); setFileName(null); onAudio(undefined); }}
+                  className="pl-3 py-1.5 text-white"
+                >
+                  🎙 {v.name}
+                </button>
+                <button
+                  onClick={() => deleteVoice(v.id)}
+                  className="pr-2 pl-1 py-1.5 text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Borrar"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Uploader */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
@@ -301,6 +374,11 @@ function ClonePanel({
           <>
             <p className="text-sm font-medium text-green-400">✓ {fileName}</p>
             <p className="text-xs text-muted mt-1">Clic para cambiar</p>
+          </>
+        ) : selectedVoiceId ? (
+          <>
+            <p className="text-sm font-medium text-green-400">✓ Usando voz guardada</p>
+            <p className="text-xs text-muted mt-1">O subí un audio nuevo</p>
           </>
         ) : (
           <>
@@ -322,6 +400,25 @@ function ClonePanel({
           className="w-full glass rounded-xl px-3 py-2 text-sm bg-transparent outline-none placeholder:text-muted/50"
         />
       </div>
+
+      {/* Guardar voz (solo si hay audio nuevo cargado) */}
+      {currentAudio && (
+        <div className="flex gap-2">
+          <input
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            placeholder="Nombre para guardar esta voz"
+            className="flex-1 glass rounded-xl px-3 py-2 text-sm bg-transparent outline-none placeholder:text-muted/50"
+          />
+          <button
+            onClick={saveVoice}
+            disabled={saving || !saveName.trim()}
+            className="btn-accent px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap disabled:opacity-50"
+          >
+            {saving ? "Guardando…" : "Guardar"}
+          </button>
+        </div>
+      )}
 
       <p className="text-xs text-muted">
         El modelo aprende el timbre de esa voz y la reproduce en el texto que escribas, en cualquier idioma.
@@ -351,9 +448,24 @@ export default function Studio() {
   const [result, setResult] = useState<AudioResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [langOpen, setLangOpen] = useState(false);
+  const [savedVoices, setSavedVoices] = useState<SavedVoice[]>([]);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string | null>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedLang = LANGUAGES.find((l) => l.code === lang) ?? LANGUAGES[0];
+
+  // Cargar voces guardadas (si el usuario está logueado, devuelve la lista)
+  const loadVoices = useCallback(async () => {
+    try {
+      const res = await fetch("/api/voices");
+      if (res.ok) {
+        const data = await res.json();
+        setSavedVoices(data.voices ?? []);
+      }
+    } catch { /* sin sesión → lista vacía */ }
+  }, []);
+
+  useEffect(() => { loadVoices(); }, [loadVoices]);
 
   /** Inserta un tag expresivo en la posición del cursor. */
   const insertTag = (tag: string) => {
@@ -376,13 +488,15 @@ export default function Studio() {
     setResult(null);
     setError(null);
 
+    const usingClone = tab === "clone" && (refAudio || selectedVoiceId);
     const body: GenerateRequest = {
       text,
       language: lang,
-      mode: tab === "clone" && refAudio ? "clone" : "design",
+      mode: usingClone ? "clone" : "design",
       design: tab === "design" ? design : undefined,
       referenceAudioBase64: tab === "clone" ? refAudio : undefined,
       referenceText: tab === "clone" && refText.trim() ? refText.trim() : undefined,
+      savedVoiceId: tab === "clone" && selectedVoiceId ? selectedVoiceId : undefined,
       speed,
       quality,
     };
@@ -407,7 +521,7 @@ export default function Studio() {
       setError(e instanceof Error ? e.message : "Error desconocido");
       setGenState("error");
     }
-  }, [text, lang, tab, design, refAudio, refText, speed, quality, genState]);
+  }, [text, lang, tab, design, refAudio, refText, selectedVoiceId, speed, quality, genState]);
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -517,7 +631,16 @@ export default function Studio() {
             {tab === "design" ? (
               <DesignPanel design={design} setDesign={setDesign} lang={lang} />
             ) : (
-              <ClonePanel onAudio={setRefAudio} refText={refText} setRefText={setRefText} />
+              <ClonePanel
+                onAudio={setRefAudio}
+                refText={refText}
+                setRefText={setRefText}
+                currentAudio={refAudio}
+                savedVoices={savedVoices}
+                selectedVoiceId={selectedVoiceId}
+                onSelectVoice={setSelectedVoiceId}
+                onVoicesChanged={loadVoices}
+              />
             )}
           </div>
 

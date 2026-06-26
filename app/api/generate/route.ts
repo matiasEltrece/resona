@@ -44,6 +44,29 @@ export async function POST(req: NextRequest) {
   }
   // Usuarios no logueados tienen acceso demo (5 generaciones por sesión se manejan en cliente)
 
+  // ── Resolver voz guardada ("Mis voces") ─────────────────────────────────
+  let referenceAudioBase64 = body.referenceAudioBase64;
+  let referenceText = body.referenceText;
+  if (body.savedVoiceId && user) {
+    const service = await createServiceClient();
+    const { data: voice } = await service
+      .from("kyma_voices")
+      .select("storage_path, ref_text, user_id")
+      .eq("id", body.savedVoiceId)
+      .single();
+
+    if (voice && voice.user_id === user.id) {
+      const { data: file } = await service.storage
+        .from("kyma-voices")
+        .download(voice.storage_path);
+      if (file) {
+        const buf = Buffer.from(await file.arrayBuffer());
+        referenceAudioBase64 = buf.toString("base64");
+        referenceText = referenceText ?? voice.ref_text ?? undefined;
+      }
+    }
+  }
+
   // ── Generación ──────────────────────────────────────────────────────────
   const provider = getProvider();
   const startedAt = Date.now();
@@ -54,7 +77,12 @@ export async function POST(req: NextRequest) {
       language: body.language ?? "es",
       mode: body.mode === "clone" ? "clone" : "design",
       design: body.design,
-      referenceAudioBase64: body.referenceAudioBase64,
+      referenceAudioBase64,
+      referenceText,
+      savedVoiceId: body.savedVoiceId,
+      speed: body.speed,
+      durationSec: body.durationSec,
+      quality: body.quality,
       seed: body.seed,
     });
 

@@ -64,6 +64,8 @@ export interface GenerateRequest {
   referenceAudioBase64?: string;
   /** Transcripción del audio de referencia (opcional, mejora la clonación). */
   referenceText?: string;
+  /** ID de una voz guardada ("Mis voces") — el server resuelve el audio. */
+  savedVoiceId?: string;
   /** Factor de velocidad de habla 0.5 (lento) .. 2.0 (rápido). Default 1.0 */
   speed?: number;
   /** Duración fija de salida en segundos (opcional, sobrescribe speed). */
