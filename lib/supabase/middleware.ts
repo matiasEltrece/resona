@@ -21,6 +21,12 @@ function checkBasicAuth(request: NextRequest): boolean {
 }
 
 export async function updateSession(request: NextRequest) {
+  // La API pública (/api/v1/*) y los webhooks no usan Basic Auth ni sesión.
+  const p = request.nextUrl.pathname;
+  if (p.startsWith("/api/v1/") || p.startsWith("/api/webhooks/")) {
+    return NextResponse.next({ request });
+  }
+
   // HTTP Basic Auth — primera línea de defensa
   if (!checkBasicAuth(request)) return basicAuthChallenge();
 

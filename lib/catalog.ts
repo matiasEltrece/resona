@@ -1,64 +1,14 @@
 /**
- * Catálogo de la UI. OmniVoice soporta 646 idiomas; acá exponemos los ~50
- * más usados con bandera. El parámetro `language` del modelo acepta tanto
- * códigos ISO como el nombre en inglés, así que mandamos el código.
+ * Catálogo de la UI. Los 646 idiomas canónicos viven en ./languages.ts
+ * (generado desde lang_map.py de OmniVoice). Acá re-exportamos + opciones
+ * de diseño de voz, tags expresivos y presets.
  */
 import type {
   Age, Pitch, Accent, ChineseDialect, VoiceDesign,
 } from "./inference/types";
 
-export const LANGUAGES: { code: string; label: string; flag: string }[] = [
-  { code: "es-AR", label: "Español (Argentina)", flag: "🇦🇷" },
-  { code: "es", label: "Español", flag: "🇪🇸" },
-  { code: "es-MX", label: "Español (México)", flag: "🇲🇽" },
-  { code: "en", label: "English (US)", flag: "🇺🇸" },
-  { code: "en-GB", label: "English (UK)", flag: "🇬🇧" },
-  { code: "pt-BR", label: "Português (Brasil)", flag: "🇧🇷" },
-  { code: "pt", label: "Português", flag: "🇵🇹" },
-  { code: "fr", label: "Français", flag: "🇫🇷" },
-  { code: "it", label: "Italiano", flag: "🇮🇹" },
-  { code: "de", label: "Deutsch", flag: "🇩🇪" },
-  { code: "nl", label: "Nederlands", flag: "🇳🇱" },
-  { code: "pl", label: "Polski", flag: "🇵🇱" },
-  { code: "ru", label: "Русский", flag: "🇷🇺" },
-  { code: "uk", label: "Українська", flag: "🇺🇦" },
-  { code: "tr", label: "Türkçe", flag: "🇹🇷" },
-  { code: "ja", label: "日本語", flag: "🇯🇵" },
-  { code: "ko", label: "한국어", flag: "🇰🇷" },
-  { code: "zh", label: "中文 (简体)", flag: "🇨🇳" },
-  { code: "zh-TW", label: "中文 (繁體)", flag: "🇹🇼" },
-  { code: "ar", label: "العربية", flag: "🇸🇦" },
-  { code: "hi", label: "हिन्दी", flag: "🇮🇳" },
-  { code: "bn", label: "বাংলা", flag: "🇧🇩" },
-  { code: "ta", label: "தமிழ்", flag: "🇮🇳" },
-  { code: "te", label: "తెలుగు", flag: "🇮🇳" },
-  { code: "ur", label: "اردو", flag: "🇵🇰" },
-  { code: "id", label: "Bahasa Indonesia", flag: "🇮🇩" },
-  { code: "ms", label: "Bahasa Melayu", flag: "🇲🇾" },
-  { code: "vi", label: "Tiếng Việt", flag: "🇻🇳" },
-  { code: "th", label: "ไทย", flag: "🇹🇭" },
-  { code: "fil", label: "Filipino", flag: "🇵🇭" },
-  { code: "sw", label: "Kiswahili", flag: "🇰🇪" },
-  { code: "yo", label: "Yorùbá", flag: "🇳🇬" },
-  { code: "ha", label: "Hausa", flag: "🇳🇬" },
-  { code: "am", label: "አማርኛ", flag: "🇪🇹" },
-  { code: "el", label: "Ελληνικά", flag: "🇬🇷" },
-  { code: "he", label: "עברית", flag: "🇮🇱" },
-  { code: "fa", label: "فارسی", flag: "🇮🇷" },
-  { code: "cs", label: "Čeština", flag: "🇨🇿" },
-  { code: "sk", label: "Slovenčina", flag: "🇸🇰" },
-  { code: "hu", label: "Magyar", flag: "🇭🇺" },
-  { code: "ro", label: "Română", flag: "🇷🇴" },
-  { code: "bg", label: "Български", flag: "🇧🇬" },
-  { code: "sv", label: "Svenska", flag: "🇸🇪" },
-  { code: "no", label: "Norsk", flag: "🇳🇴" },
-  { code: "da", label: "Dansk", flag: "🇩🇰" },
-  { code: "fi", label: "Suomi", flag: "🇫🇮" },
-  { code: "ca", label: "Català", flag: "🇪🇸" },
-  { code: "hr", label: "Hrvatski", flag: "🇭🇷" },
-  { code: "sr", label: "Српски", flag: "🇷🇸" },
-  { code: "lt", label: "Lietuvių", flag: "🇱🇹" },
-];
+export { LANGUAGES, LANGUAGE_COUNT } from "./languages";
+export type { Language } from "./languages";
 
 /** ¿El idioma seleccionado es inglés? (para habilitar acentos) */
 export function isEnglish(code: string) {
@@ -66,7 +16,7 @@ export function isEnglish(code: string) {
 }
 /** ¿El idioma seleccionado es chino? (para habilitar dialectos) */
 export function isChinese(code: string) {
-  return code === "zh" || code.startsWith("zh-");
+  return code === "zh" || code === "yue" || code === "nan" || code.startsWith("zh-");
 }
 
 /* ─── Opciones de diseño de voz (mapean 1:1 con OmniVoice) ─────────────── */

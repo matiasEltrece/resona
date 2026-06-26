@@ -72,17 +72,21 @@ export default function DashboardClient({ user, credits }: Props) {
           <p className="text-sm text-muted">Generá voces, cloná, diseñá.</p>
         </Link>
 
-        <div className="glass rounded-2xl p-5 space-y-2">
-          <span className="text-2xl">⚡</span>
-          <p className="font-semibold">Plan Creator</p>
-          <p className="text-sm text-muted">500 generaciones / mes · voice cloning · HD sin marca.</p>
-          <a
-            href="/#precios"
-            className="btn-accent inline-block text-xs px-4 py-1.5 rounded-lg mt-1"
-          >
-            Ver planes
-          </a>
-        </div>
+        <Link href="/dashboard/api" className="glass glass-hover rounded-2xl p-5 space-y-2 block">
+          <span className="text-2xl">🔌</span>
+          <p className="font-semibold">API & claves</p>
+          <p className="text-sm text-muted">Integrá Kyma en tu producto. Generá API keys y leé los docs.</p>
+        </Link>
+      </div>
+
+      {/* Plan */}
+      <div className="glass rounded-2xl p-5 space-y-2">
+        <span className="text-2xl">⚡</span>
+        <p className="font-semibold">Tu plan y facturación</p>
+        <p className="text-sm text-muted">Creator: 500 generaciones/mes · Pro: ilimitado + API.</p>
+        <a href="/#precios" className="btn-accent inline-block text-xs px-4 py-1.5 rounded-lg mt-1">
+          Ver planes
+        </a>
       </div>
 
       {/* Stats de la plataforma */}

@@ -438,7 +438,8 @@ const DEFAULT_DESIGN: VoiceDesign = {
 export default function Studio() {
   const [tab, setTab] = useState<Tab>("design");
   const [text, setText] = useState(SAMPLE_SCRIPTS[0]);
-  const [lang, setLang] = useState("es-AR");
+  const [lang, setLang] = useState("es");
+  const [langQuery, setLangQuery] = useState("");
   const [design, setDesign] = useState<VoiceDesign>(DEFAULT_DESIGN);
   const [refAudio, setRefAudio] = useState<string | undefined>();
   const [refText, setRefText] = useState("");
@@ -595,7 +596,7 @@ export default function Studio() {
             <p className="text-xs text-muted uppercase tracking-widest">Idioma <span className="opacity-50">· 646 disponibles</span></p>
             <div className="relative">
               <button
-                onClick={() => setLangOpen(!langOpen)}
+                onClick={() => { setLangOpen(!langOpen); setLangQuery(""); }}
                 className="flex items-center gap-2 glass glass-hover rounded-xl px-3 py-2 text-sm w-full"
               >
                 <span className="text-xl">{selectedLang.flag}</span>
@@ -604,19 +605,39 @@ export default function Studio() {
               </button>
               {langOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 glass rounded-xl z-20 overflow-hidden border border-border shadow-2xl">
+                  <div className="p-2 border-b border-border">
+                    <input
+                      autoFocus
+                      value={langQuery}
+                      onChange={(e) => setLangQuery(e.target.value)}
+                      placeholder="Buscar entre 646 idiomas…"
+                      className="w-full bg-transparent outline-none text-sm placeholder:text-muted/50"
+                    />
+                  </div>
                   <div className="max-h-52 overflow-y-auto">
-                    {LANGUAGES.map((l) => (
-                      <button
-                        key={l.code}
-                        onClick={() => { setLang(l.code); setLangOpen(false); }}
-                        className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/5 transition-colors ${
-                          l.code === lang ? "bg-white/5 text-white" : "text-muted"
-                        }`}
-                      >
-                        <span className="text-lg">{l.flag}</span>
-                        <span>{l.label}</span>
-                      </button>
-                    ))}
+                    {LANGUAGES
+                      .filter((l) => {
+                        const q = langQuery.trim().toLowerCase();
+                        if (!q) return true;
+                        return (
+                          l.label.toLowerCase().includes(q) ||
+                          l.code.toLowerCase().includes(q) ||
+                          (l.canonical?.toLowerCase().includes(q) ?? false)
+                        );
+                      })
+                      .slice(0, 80)
+                      .map((l) => (
+                        <button
+                          key={`${l.code}-${l.label}`}
+                          onClick={() => { setLang(l.code); setLangOpen(false); }}
+                          className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/5 transition-colors ${
+                            l.code === lang ? "bg-white/5 text-white" : "text-muted"
+                          }`}
+                        >
+                          <span className="text-lg">{l.flag}</span>
+                          <span>{l.label}</span>
+                        </button>
+                      ))}
                   </div>
                 </div>
               )}
