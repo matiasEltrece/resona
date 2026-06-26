@@ -1,5 +1,7 @@
 import Studio from "@/components/Studio";
 import Pricing from "@/components/Pricing";
+import NavbarAuth from "@/components/NavbarAuth";
+import { brand } from "@/lib/brand";
 
 const USE_CASES = [
   { emoji: "🎙", title: "Creadores de contenido", desc: "Grabá 10s de tu voz y multiplicala: narraciones en 30 idiomas sin volver al micrófono." },
@@ -14,26 +16,7 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* ── Navbar ── */}
-      <nav className="sticky top-0 z-30 border-b border-border backdrop-blur-xl bg-[rgba(6,5,9,0.7)]">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight">
-              <span className="text-gradient">Resona</span>
-            </span>
-            <span className="hidden sm:inline text-xs text-muted border border-border rounded-full px-2 py-0.5">
-              beta
-            </span>
-          </div>
-          <nav className="hidden sm:flex items-center gap-6 text-sm text-muted">
-            <a href="#studio" className="hover:text-white transition-colors">Studio</a>
-            <a href="#casos" className="hover:text-white transition-colors">Casos de uso</a>
-            <a href="#precios" className="hover:text-white transition-colors">Precios</a>
-          </nav>
-          <a href="#studio" className="btn-accent px-4 py-1.5 rounded-full text-sm font-medium">
-            Empezar gratis
-          </a>
-        </div>
-      </nav>
+      <NavbarAuth />
 
       {/* ── Hero ── */}
       <section className="py-20 px-4 text-center space-y-6 fade-up">

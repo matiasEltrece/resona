@@ -3,22 +3,24 @@
  * TODO el branding sale de acá: cambiá estos valores y se actualiza toda la app.
  * Pensado así para poder revender el producto "llave en mano" re-marcándolo en minutos.
  */
+// Kyma — κῦμα — "ola" en griego antiguo
 export const brand = {
-  name: "Resona",
-  // Cómo se lee el nombre en el logo (permite estilizar una parte)
-  logoMark: "Resona",
+  name: "Kyma",
+  logoMark: "Kyma",
   tagline: "Cualquier voz. Cualquier idioma. En segundos.",
   description:
-    "Estudio de voz con IA. Cloná cualquier voz con 10 segundos de audio o diseñá una desde cero, y hacela hablar en 600+ idiomas con calidad de estudio.",
-  domain: "resona.ai",
-  // Paleta (se inyecta en CSS variables en globals.css)
+    "Estudio de voz con IA. Cloná cualquier voz con 10 segundos de audio o diseñala desde cero — 600+ idiomas con calidad de estudio.",
+  domain: "kyma.synthetic.com.ar",
   colors: {
-    accentFrom: "#7c5cff", // violeta
-    accentVia: "#d946ef", // fucsia
-    accentTo: "#22d3ee", // cyan
+    accentFrom: "#7c5cff",
+    accentVia: "#d946ef",
+    accentTo: "#22d3ee",
   },
   social: {
-    twitter: "@resona_ai",
+    twitter: "@kyma_ai",
+  },
+  free: {
+    generationsPerMonth: 20,
   },
 } as const;
 
