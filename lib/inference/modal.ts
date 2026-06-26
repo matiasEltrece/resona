@@ -31,21 +31,35 @@ export class ModalProvider implements InferenceProvider {
       );
     }
 
-    const res = await fetch(this.endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
-      },
-      body: JSON.stringify({
-        text: req.text,
-        language: req.language,
-        mode: req.mode,
-        design: req.design,
-        reference_audio: req.referenceAudioBase64,
-        seed: req.seed,
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 270_000); // 4.5 min
+
+    let res: Response;
+    try {
+      res = await fetch(this.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
+        },
+        body: JSON.stringify({
+          text: req.text,
+          language: req.language,
+          mode: req.mode,
+          design: req.design,
+          reference_audio: req.referenceAudioBase64,
+          seed: req.seed,
+        }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if ((err as Error).name === "AbortError") {
+        throw new Error("El modelo tardó demasiado. Intentá de nuevo — el próximo request será más rápido.");
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!res.ok) {
       const detail = await res.text().catch(() => "");

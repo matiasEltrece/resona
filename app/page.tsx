@@ -104,7 +104,7 @@ export default function Home() {
       {/* ── Footer ── */}
       <footer className="border-t border-border py-8 px-4">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted">
-          <span className="font-semibold text-gradient text-sm">Resona</span>
+          <span className="font-semibold text-gradient text-sm">{brand.name}</span>
           <p className="text-center">
             Motor:{" "}
             <a href="https://github.com/k2-fsa/OmniVoice" target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">
@@ -114,7 +114,7 @@ export default function Home() {
           </p>
           <div className="flex gap-4">
             <a href="#precios" className="hover:text-white transition-colors">Precios</a>
-            <a href="mailto:hola@resona.ai" className="hover:text-white transition-colors">Contacto</a>
+            <a href="mailto:matiasborras@gmail.com" className="hover:text-white transition-colors">Contacto</a>
           </div>
         </div>
       </footer>

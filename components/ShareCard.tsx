@@ -13,12 +13,14 @@ export default function ShareCard({ audioSrc, text, language, mode }: ShareCardP
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
 
-  const shareText = `Generé esta voz con IA en segundos con Resona 🎙✨\n${
+  const SITE_URL = "https://kyma.synthetic.com.ar";
+
+  const shareText = `Generé esta voz con IA en segundos con Kyma 🎙✨\n${
     mode === "clone" ? "Cloné mi propia voz" : "Diseñé una voz desde cero"
-  } en ${language} — probalo gratis en resona.ai`;
+  } en ${language} — probalo gratis en kyma.synthetic.com.ar`;
 
   const copyLink = async () => {
-    await navigator.clipboard.writeText("https://resona.ai?ref=share");
+    await navigator.clipboard.writeText(`${SITE_URL}?ref=share`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -27,16 +29,15 @@ export default function ShareCard({ audioSrc, text, language, mode }: ShareCardP
     if (!navigator.share) { copyLink(); return; }
     setSharing(true);
     try {
-      // Convertimos el audio base64 a Blob para compartir como archivo
       const res = await fetch(audioSrc);
       const blob = await res.blob();
-      const file = new File([blob], "mi-voz-resona.wav", { type: "audio/wav" });
+      const file = new File([blob], "mi-voz-kyma.wav", { type: "audio/wav" });
 
       await navigator.share({
         title: "Escuchá esta voz que generé con IA",
         text: shareText,
         files: navigator.canShare?.({ files: [file] }) ? [file] : undefined,
-        url: "https://resona.ai?ref=share",
+        url: `${SITE_URL}?ref=share`,
       });
     } catch {
       // usuario canceló o error → fallback a copiar link

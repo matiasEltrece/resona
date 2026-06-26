@@ -2,12 +2,9 @@
   "framework": "nextjs",
   "buildCommand": "pnpm build",
   "installCommand": "pnpm install",
-  "env": {
-    "INFERENCE_PROVIDER": "mock"
-  },
   "functions": {
     "app/api/generate/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   }
 }

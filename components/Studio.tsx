@@ -81,7 +81,7 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
   const download = () => {
     const a = document.createElement("a");
     a.href = result.src;
-    a.download = `resona-${Date.now()}.wav`;
+    a.download = `kyma-${Date.now()}.wav`;
     a.click();
   };
 
@@ -499,7 +499,10 @@ export default function Studio() {
                   <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
                   <path d="M12 2a10 10 0 0 1 10 10" />
                 </svg>
-                Generando…
+                <span className="flex flex-col items-start leading-tight">
+                  <span>Generando…</span>
+                  <span className="text-xs opacity-60 font-normal">primera vez puede tardar ~60s</span>
+                </span>
               </span>
             ) : (
               "✦ Generar voz"
@@ -532,9 +535,15 @@ export default function Studio() {
               />
             </>
           ) : error ? (
-            <div className="glass rounded-2xl p-5 fade-up border border-red-500/20">
+            <div className="glass rounded-2xl p-5 fade-up border border-red-500/20 space-y-2">
               <p className="text-red-400 text-sm font-medium">⚠ Error</p>
-              <p className="text-muted text-xs mt-1">{error}</p>
+              <p className="text-muted text-xs">{error}</p>
+              <button
+                onClick={() => { setError(null); setGenState("idle"); }}
+                className="text-xs text-red-400 underline hover:text-red-300 transition-colors"
+              >
+                Reintentar
+              </button>
             </div>
           ) : (
             <div className="glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center flex-1 min-h-[180px]">
