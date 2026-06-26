@@ -21,16 +21,23 @@ El costo real por generación es **~$0.001** (ver ROADMAP-costos-modal.md). Con 
 - Creator $12/mes con 500 generaciones → costo GPU ~$0.50 → **96% de margen**.
 - Pro $39/mes ilimitado → aunque genere 10.000 → costo ~$9.50 → **75% de margen**.
 
-## Planes propuestos (ya en la DB, tabla `kyma_plans`)
+## Planes (medición por CARACTERES, como ElevenLabs)
 
-| Plan | Precio | Generaciones/mes | API | Extra |
-|---|---|---|---|---|
-| **Free** | $0 | 20 | ❌ | con marca de agua / demo |
-| **Creator** | $12/mes | 500 | ✅ | voice cloning, "Mis voces", HD sin marca |
-| **Pro** | $39/mes | ilimitado* | ✅ | API alto volumen, prioridad, soporte |
-| **Pack créditos** | $X one-time | +500 al mes actual | — | para overflow puntual |
+> Decisión 2026-06-26: se mide por caracteres, no por generaciones. Una generación
+> puede ser de 1 o 5000 caracteres → contar generaciones subcobra a los usuarios
+> pesados. El costo de GPU escala con la duración del audio ≈ caracteres.
 
-\* "ilimitado" con fair-use (límite técnico alto para evitar abuso).
+| Plan | Precio | Caracteres/mes | Costo GPU | Margen | API |
+|---|---|---|---|---|---|
+| **Free** | $0 | 10.000 | ~$0.03 | — | ❌ |
+| **Creator** | $12/mes | 200.000 | ~$0.60 | **95%** | ✅ |
+| **Pro** | $39/mes | 1.000.000 | ~$3 | **92%** | ✅ |
+
+- **Costo:** ~$0.003 por cada 1.000 caracteres (GPU A10).
+- **Comparación:** ElevenLabs cobra $22 por 100k y $99 por 500k. Damos 2× o más por la mitad.
+- **Rate limit API:** 30 req/minuto por key (anti-abuso).
+- Límites configurables en la tabla `kyma_plans.monthly_credits` (en caracteres).
+- Pack de créditos one-time (opcional, a futuro) para overflow.
 
 ## Cómo conectarlo (pasos concretos)
 

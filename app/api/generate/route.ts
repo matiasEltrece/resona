@@ -33,11 +33,16 @@ export async function POST(req: NextRequest) {
     const { data: credit } = await service.rpc("kyma_consume_credit", {
       p_user_id: user.id,
       p_month: month,
+      p_chars: body.text.length,
     }).single();
 
     if (credit && !(credit as { ok: boolean }).ok) {
+      const c = credit as { used: number; limit: number };
       return NextResponse.json(
-        { error: "Alcanzaste el límite mensual. Actualizá tu plan para continuar.", code: "credits_exhausted" },
+        {
+          error: `Alcanzaste el límite mensual de caracteres (${c.used}/${c.limit}). Actualizá tu plan para continuar.`,
+          code: "credits_exhausted",
+        },
         { status: 429 },
       );
     }

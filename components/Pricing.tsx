@@ -9,8 +9,8 @@ const plans = [
     highlight: false,
     badge: null,
     features: [
-      "20 generaciones / mes",
-      "600+ idiomas",
+      "10.000 caracteres / mes",
+      "646 idiomas",
       "Diseño de voz",
       "Descarga WAV",
       "Marca de agua en audio",
@@ -28,8 +28,8 @@ const plans = [
     highlight: true,
     badge: "Más popular",
     features: [
-      "500 generaciones / mes",
-      "600+ idiomas",
+      "200.000 caracteres / mes",
+      "646 idiomas",
       "Diseño de voz",
       "Voice cloning",
       "Audio HD sin marca",
@@ -49,8 +49,8 @@ const plans = [
     highlight: false,
     badge: "Para equipos",
     features: [
-      "Generaciones ilimitadas",
-      "600+ idiomas",
+      "1.000.000 caracteres / mes",
+      "646 idiomas",
       "Diseño de voz",
       "Voice cloning avanzado",
       "Audio HD sin marca",

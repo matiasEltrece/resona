@@ -65,18 +65,31 @@ export async function POST(req: NextRequest) {
 
   const service = await createServiceClient();
 
-  // ── Créditos (mismo pool mensual que la web) ─────────────────────────────
+  // ── Rate limit por key (anti-abuso): máx RATE_LIMIT requests / 60s ───────
+  const RATE_LIMIT = 30;
+  const since = new Date(Date.now() - 60_000).toISOString();
+  const { count: recent } = await service
+    .from("kyma_api_usage")
+    .select("id", { count: "exact", head: true })
+    .eq("api_key_id", auth.keyId)
+    .gte("created_at", since);
+  if ((recent ?? 0) >= RATE_LIMIT) {
+    return err(`Demasiadas requests. Límite: ${RATE_LIMIT}/minuto por key.`, 429, "rate_limited");
+  }
+
+  // ── Créditos por caracteres (mismo pool mensual que la web) ──────────────
   const now = new Date();
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const { data: credit } = await service
-    .rpc("kyma_consume_credit_api", { p_user_id: auth.userId, p_month: month })
+    .rpc("kyma_consume_credit_api", { p_user_id: auth.userId, p_month: month, p_chars: body.text.length })
     .single();
 
   if (credit && !(credit as { ok: boolean }).ok) {
+    const c = credit as { used: number; limit: number };
     void service.from("kyma_api_usage").insert({
       api_key_id: auth.keyId, user_id: auth.userId, endpoint: "/v1/generate", status: 429, chars: body.text.length,
     });
-    return err("Límite mensual alcanzado. Actualizá tu plan.", 429, "credits_exhausted");
+    return err(`Límite mensual de caracteres alcanzado (${c.used}/${c.limit}). Actualizá tu plan.`, 429, "credits_exhausted");
   }
 
   // ── Resolver voz guardada ────────────────────────────────────────────────

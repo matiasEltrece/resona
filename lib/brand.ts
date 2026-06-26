@@ -21,7 +21,7 @@ export const brand = {
     twitter: "@kyma_ai",
   },
   free: {
-    generationsPerMonth: 20,
+    charactersPerMonth: 10000,
   },
 } as const;
 

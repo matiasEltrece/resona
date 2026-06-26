@@ -100,7 +100,7 @@ export default function LoginForm({
       </button>
 
       <p className="text-center text-xs text-muted">
-        Plan gratuito: {brand.free.generationsPerMonth} generaciones / mes
+        Plan gratuito: {brand.free.charactersPerMonth.toLocaleString("es")} caracteres / mes
       </p>
     </form>
   );

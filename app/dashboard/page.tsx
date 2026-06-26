@@ -21,7 +21,7 @@ export default async function DashboardPage() {
     .single();
 
   const used = credits?.used ?? 0;
-  const limit = credits?.limit ?? brand.free.generationsPerMonth;
+  const limit = credits?.limit ?? brand.free.charactersPerMonth;
 
   const isAdmin = !!process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL;
 

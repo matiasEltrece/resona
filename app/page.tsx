@@ -94,7 +94,7 @@ export default function Home() {
           <span className="text-gradient">ahora mismo</span>
         </h2>
         <p className="text-muted max-w-md mx-auto">
-          Sin tarjeta de crédito. 20 generaciones gratis por mes. Cancelás cuando quieras.
+          Sin tarjeta de crédito. 10.000 caracteres gratis por mes. Cancelás cuando quieras.
         </p>
         <a href="#studio" className="btn-accent inline-block px-10 py-4 rounded-2xl text-lg font-semibold">
           ✦ Abrir el Studio

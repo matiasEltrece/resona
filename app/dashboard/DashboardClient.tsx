@@ -12,7 +12,8 @@ interface Props {
 export default function DashboardClient({ user, credits, isAdmin }: Props) {
   const pct = Math.min(100, Math.round((credits.used / credits.limit) * 100));
   const remaining = Math.max(0, credits.limit - credits.used);
-  const isLow = remaining <= 5;
+  const isLow = remaining <= credits.limit * 0.1;
+  const fmt = (n: number) => n.toLocaleString("es");
 
   return (
     <div className="space-y-6 fade-up">
@@ -32,16 +33,16 @@ export default function DashboardClient({ user, credits, isAdmin }: Props) {
       {/* Créditos del mes */}
       <div className="glass rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Generaciones este mes</h2>
+          <h2 className="font-semibold">Caracteres este mes</h2>
           <span className="text-xs text-muted">{credits.month}</span>
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className={isLow ? "text-yellow-400" : "text-muted"}>
-              {remaining} restantes
+              {fmt(remaining)} restantes
             </span>
-            <span className="text-muted">{credits.used} / {credits.limit}</span>
+            <span className="text-muted">{fmt(credits.used)} / {fmt(credits.limit)}</span>
           </div>
           <div className="h-2 bg-white/10 rounded-full overflow-hidden">
             <div
@@ -56,15 +57,15 @@ export default function DashboardClient({ user, credits, isAdmin }: Props) {
           </div>
         </div>
 
-        {isLow && (
+        {isLow && remaining > 0 && (
           <div className="text-xs text-yellow-400 bg-yellow-500/10 rounded-lg px-3 py-2">
-            Te quedás sin generaciones. Actualizá tu plan para continuar.
+            Te quedan pocos caracteres. Actualizá tu plan para continuar.
           </div>
         )}
 
         {remaining === 0 && (
           <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">
-            Alcanzaste el límite mensual del plan gratuito. Las generaciones se renuevan el 1 del mes.
+            Alcanzaste el límite mensual de caracteres. Se renueva el 1 del mes o actualizá tu plan.
           </p>
         )}
       </div>

@@ -132,8 +132,10 @@ open("out.wav", "wb").write(base64.b64decode(data["audioBase64"]))
 
 ## Límites y planes
 
-- El uso de la API consume del **mismo pool mensual** que tu cuenta web.
-- Free: 20 gen/mes · Creator: 500/mes · Pro: ilimitado.
+- El uso se mide por **caracteres procesados** (como ElevenLabs), del **mismo pool mensual** que tu cuenta web.
+- Free: 10.000 · Creator: 200.000 · Pro: 1.000.000 caracteres/mes.
+- **Rate limit:** 30 requests/minuto por API key.
+- Códigos de límite: `credits_exhausted` (429, sin caracteres) · `rate_limited` (429, demasiadas requests).
 - Para prompting avanzado, emociones y todos los parámetros: ver [GUIA-OmniVoice-completa.md](GUIA-OmniVoice-completa.md).
 
 ## CORS
