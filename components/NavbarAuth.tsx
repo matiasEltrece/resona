@@ -10,8 +10,9 @@ export default async function NavbarAuth() {
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <a href="/" className="text-xl font-bold tracking-tight">
-            <span className="text-gradient">{brand.name}</span>
+          <a href="/" className="flex items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/kyma-logo.png" alt={brand.name} className="h-7 w-auto" />
           </a>
           <span className="hidden sm:inline text-xs text-muted border border-border rounded-full px-2 py-0.5">
             beta
