@@ -3,6 +3,12 @@ import Pricing from "@/components/Pricing";
 import NavbarAuth from "@/components/NavbarAuth";
 import { brand } from "@/lib/brand";
 
+// Barras de la onda del hero: forma de campana simétrica con variación
+const HERO_BARS = Array.from({ length: 64 }, (_, i) => {
+  const c = Math.abs(i - 31.5) / 31.5;
+  return Math.min(100, Math.round(20 + (1 - c) * 75 + (i % 3) * 7));
+});
+
 const USE_CASES = [
   { emoji: "🎙", title: "Creadores de contenido", desc: "Grabá 10s de tu voz y multiplicala: narraciones en 30 idiomas sin volver al micrófono." },
   { emoji: "📖", title: "Audiolibros", desc: "Convertí cualquier libro en audiolibro con voces diseñadas por capítulo: narrador, personajes, épocas." },
@@ -19,31 +25,55 @@ export default function Home() {
       <NavbarAuth />
 
       {/* ── Hero ── */}
-      <section className="py-20 px-4 text-center space-y-6 fade-up">
-        <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 text-xs text-muted">
+      <section className="relative pt-20 pb-12 px-4 text-center fade-up overflow-hidden">
+        <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 text-xs text-muted mb-7">
           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          Impulsado por OmniVoice · Apache-2.0 · Modelo open-source
+          Impulsado por OmniVoice · 646 idiomas · Apache-2.0
         </div>
 
-        <h1 className="text-5xl sm:text-7xl font-bold leading-tight tracking-tight max-w-3xl mx-auto">
-          Cualquier voz.
-          <br />
-          <span className="text-gradient">Cualquier idioma.</span>
+        <h1 className="text-5xl sm:text-7xl font-bold leading-[1.05] tracking-tight max-w-4xl mx-auto">
+          Creá, cloná y diseñá{" "}
+          <span className="text-gradient">voces con IA</span>
         </h1>
 
-        <p className="text-lg text-muted max-w-xl mx-auto leading-relaxed">
+        <p className="text-lg text-muted max-w-xl mx-auto leading-relaxed mt-6">
           Cloná una voz con 10 segundos de audio o diseñala desde cero.
-          Más de <strong className="text-white">600 idiomas</strong>, calidad de estudio,
-          generación en menos de 1 segundo.
+          Más de <strong className="text-white">646 idiomas</strong>, calidad de estudio,
+          en menos de 1 segundo.
         </p>
 
-        <div className="flex flex-wrap justify-center gap-2">
+        <div className="flex flex-wrap justify-center gap-3 mt-8">
+          <a href="#studio" className="btn-accent px-8 py-3.5 rounded-2xl text-base font-semibold">
+            ✦ Probar gratis
+          </a>
+          <a href="#studio" className="glass glass-hover px-8 py-3.5 rounded-2xl text-base font-semibold">
+            ▶ Ver el Studio
+          </a>
+        </div>
+
+        {/* Onda neón protagonista */}
+        <div className="glow-behind max-w-3xl mx-auto mt-16">
+          <div className="hero-wave">
+            {HERO_BARS.map((h, i) => (
+              <div key={i} className="wbar" style={{ height: `${h}%`, animationDelay: `${i * 0.03}s`, opacity: 0.45 + h / 200 }} />
+            ))}
+          </div>
+          <div className="hero-wave hero-wave-reflect" aria-hidden="true">
+            {HERO_BARS.map((h, i) => (
+              <div key={i} className="wbar" style={{ height: `${h}%`, animationDelay: `${i * 0.03}s` }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Chips de capacidades (honestos, sin logos falsos) */}
+        <div className="flex flex-wrap justify-center gap-2 mt-12">
           {[
-            "🌍 600+ idiomas",
+            "🌍 646 idiomas",
             "⚡ <1s generación",
             "🎙 Voice cloning",
             "🎨 Voice design",
-            "😂 [laughter] & más",
+            "😂 [laughter] & emociones",
+            "🔌 API REST",
             "✅ Uso comercial OK",
           ].map((f) => (
             <span key={f} className="glass rounded-full px-3 py-1 text-xs text-muted">
@@ -51,10 +81,6 @@ export default function Home() {
             </span>
           ))}
         </div>
-
-        <a href="#studio" className="btn-accent inline-block px-8 py-3.5 rounded-2xl text-base font-semibold">
-          Probalo gratis — sin registro
-        </a>
       </section>
 
       {/* ── Studio ── */}
