@@ -11,6 +11,7 @@ export const brand = {
   description:
     "Estudio de voz con IA. Cloná cualquier voz con 10 segundos de audio o diseñala desde cero — 600+ idiomas con calidad de estudio.",
   domain: "kyma.synthetic.com.ar",
+  email: "hola@kyma.synthetic.com.ar",
   colors: {
     accentFrom: "#7c5cff",
     accentVia: "#d946ef",

@@ -6,9 +6,10 @@ import Link from "next/link";
 interface Props {
   user: { email: string; id: string };
   credits: { used: number; limit: number; month: string };
+  isAdmin?: boolean;
 }
 
-export default function DashboardClient({ user, credits }: Props) {
+export default function DashboardClient({ user, credits, isAdmin }: Props) {
   const pct = Math.min(100, Math.round((credits.used / credits.limit) * 100));
   const remaining = Math.max(0, credits.limit - credits.used);
   const isLow = remaining <= 5;
@@ -16,9 +17,16 @@ export default function DashboardClient({ user, credits }: Props) {
   return (
     <div className="space-y-6 fade-up">
       {/* Saludo */}
-      <div>
-        <h1 className="text-2xl font-bold">Hola 👋</h1>
-        <p className="text-muted text-sm mt-1">{user.email}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Hola 👋</h1>
+          <p className="text-muted text-sm mt-1">{user.email}</p>
+        </div>
+        {isAdmin && (
+          <Link href="/dashboard/admin" className="text-xs glass glass-hover rounded-lg px-3 py-1.5">
+            📊 Métricas
+          </Link>
+        )}
       </div>
 
       {/* Créditos del mes */}

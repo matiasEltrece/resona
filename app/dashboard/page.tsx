@@ -23,10 +23,13 @@ export default async function DashboardPage() {
   const used = credits?.used ?? 0;
   const limit = credits?.limit ?? brand.free.generationsPerMonth;
 
+  const isAdmin = !!process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL;
+
   return (
     <DashboardClient
       user={{ email: user.email!, id: user.id }}
       credits={{ used, limit, month: monthKey }}
+      isAdmin={isAdmin}
     />
   );
 }

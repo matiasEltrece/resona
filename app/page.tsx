@@ -114,7 +114,9 @@ export default function Home() {
           </p>
           <div className="flex gap-4">
             <a href="#precios" className="hover:text-white transition-colors">Precios</a>
-            <a href="mailto:matiasborras@gmail.com" className="hover:text-white transition-colors">Contacto</a>
+            <a href="/terminos" className="hover:text-white transition-colors">Términos</a>
+            <a href="/privacidad" className="hover:text-white transition-colors">Privacidad</a>
+            <a href={`mailto:${brand.email}`} className="hover:text-white transition-colors">Contacto</a>
           </div>
         </div>
       </footer>
