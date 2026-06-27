@@ -21,6 +21,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "El texto supera el límite de 5000 caracteres" }, { status: 400 });
   }
 
+  // ── Consentimiento obligatorio para clonar (anti-abuso / legal) ──────────
+  const isCloneReq = body.mode === "clone" || !!body.referenceAudioBase64 || !!body.savedVoiceId;
+  if (isCloneReq && !body.consent) {
+    return NextResponse.json(
+      { error: "Para clonar una voz tenés que confirmar que es tuya o que tenés permiso para usarla.", code: "consent_required" },
+      { status: 400 },
+    );
+  }
+
   // ── Control de créditos ─────────────────────────────────────────────────
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -118,6 +127,7 @@ export async function POST(req: NextRequest) {
         duration_ms: result.durationMs,
         rtf: result.rtf,
         provider: result.provider,
+        consent: isCloneReq ? true : null,
       }).then(() => {});
     }
 

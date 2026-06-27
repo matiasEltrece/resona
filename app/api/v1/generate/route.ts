@@ -63,6 +63,12 @@ export async function POST(req: NextRequest) {
   if (!body.text || body.text.trim().length === 0) return err("Falta el campo 'text'", 400, "no_text");
   if (body.text.length > 5000) return err("El texto supera el límite de 5000 caracteres", 400, "text_too_long");
 
+  // Consentimiento obligatorio para clonar: el caller debe enviar "consent": true
+  const isCloneReq = body.mode === "clone" || !!body.referenceAudioBase64 || !!body.savedVoiceId;
+  if (isCloneReq && !body.consent) {
+    return err("Para clonar una voz tenés que enviar \"consent\": true confirmando que tenés permiso para usarla.", 400, "consent_required");
+  }
+
   const service = await createServiceClient();
 
   // ── Gate: la API es exclusiva del plan Pro ───────────────────────────────
@@ -144,6 +150,7 @@ export async function POST(req: NextRequest) {
     void service.from("kyma_generations").insert({
       user_id: auth.userId, mode: body.mode ?? "design", language: body.language ?? "es",
       text_length: body.text.length, duration_ms: result.durationMs, rtf: result.rtf, provider: `api:${result.provider}`,
+      consent: isCloneReq ? true : null,
     });
 
     return NextResponse.json(

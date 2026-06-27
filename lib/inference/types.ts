@@ -74,6 +74,8 @@ export interface GenerateRequest {
   quality?: Quality;
   /** Semilla opcional para reproducibilidad */
   seed?: number;
+  /** Consentimiento de uso de la voz (obligatorio para mode=clone). */
+  consent?: boolean;
 }
 
 export interface GenerateResult {

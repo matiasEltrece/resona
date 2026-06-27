@@ -488,6 +488,7 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
   const [result, setResult] = useState<AudioResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [cloneConsent, setCloneConsent] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [savedVoices, setSavedVoices] = useState<SavedVoice[]>([]);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string | null>(null);
@@ -549,12 +550,22 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
       }
     }
 
+    const usingClone = tab === "clone" && (refAudio || selectedVoiceId);
+
+    // ── Consentimiento obligatorio para clonar (anti-abuso / legal) ──────────
+    if (usingClone && !cloneConsent) {
+      setResult(null);
+      setError("Para clonar una voz tenés que confirmar que es tuya o que tenés permiso para usarla.");
+      setErrorCode("consent_required");
+      setGenState("error");
+      return;
+    }
+
     setGenState("loading");
     setResult(null);
     setError(null);
     setErrorCode(null);
 
-    const usingClone = tab === "clone" && (refAudio || selectedVoiceId);
     const body: GenerateRequest = {
       text,
       language: lang,
@@ -563,6 +574,7 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
       referenceAudioBase64: tab === "clone" ? refAudio : undefined,
       referenceText: tab === "clone" && refText.trim() ? refText.trim() : undefined,
       savedVoiceId: tab === "clone" && selectedVoiceId ? selectedVoiceId : undefined,
+      consent: usingClone ? true : undefined,
       speed,
       quality,
     };
@@ -598,7 +610,7 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
       setErrorCode(null);
       setGenState("error");
     }
-  }, [text, lang, tab, design, refAudio, refText, selectedVoiceId, speed, quality, genState, isAuthed, anonGens]);
+  }, [text, lang, tab, design, refAudio, refText, selectedVoiceId, speed, quality, genState, isAuthed, anonGens, cloneConsent]);
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -736,16 +748,32 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
                 </a>
               </div>
             ) : (
-              <ClonePanel
-                onAudio={setRefAudio}
-                refText={refText}
-                setRefText={setRefText}
-                currentAudio={refAudio}
-                savedVoices={savedVoices}
-                selectedVoiceId={selectedVoiceId}
-                onSelectVoice={setSelectedVoiceId}
-                onVoicesChanged={loadVoices}
-              />
+              <>
+                <ClonePanel
+                  onAudio={setRefAudio}
+                  refText={refText}
+                  setRefText={setRefText}
+                  currentAudio={refAudio}
+                  savedVoices={savedVoices}
+                  selectedVoiceId={selectedVoiceId}
+                  onSelectVoice={setSelectedVoiceId}
+                  onVoicesChanged={loadVoices}
+                />
+                {/* Consentimiento obligatorio para clonar */}
+                <label className="flex items-start gap-2 mt-3 cursor-pointer text-xs text-muted">
+                  <input
+                    type="checkbox"
+                    checked={cloneConsent}
+                    onChange={(e) => setCloneConsent(e.target.checked)}
+                    className="mt-0.5 accent-[var(--accent-via)]"
+                  />
+                  <span>
+                    Confirmo que esta voz es mía o que tengo permiso para clonarla, y acepto los{" "}
+                    <a href="/terminos" target="_blank" className="underline hover:text-white">términos de uso</a>.
+                    Clonar voces de terceros sin consentimiento está prohibido.
+                  </span>
+                </label>
+              </>
             )}
           </div>
 
