@@ -487,6 +487,7 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
   const [genState, setGenState] = useState<GenState>("idle");
   const [result, setResult] = useState<AudioResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [langOpen, setLangOpen] = useState(false);
   const [savedVoices, setSavedVoices] = useState<SavedVoice[]>([]);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string | null>(null);
@@ -551,6 +552,7 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
     setGenState("loading");
     setResult(null);
     setError(null);
+    setErrorCode(null);
 
     const usingClone = tab === "clone" && (refAudio || selectedVoiceId);
     const body: GenerateRequest = {
@@ -572,7 +574,12 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Error del servidor");
+      if (!res.ok) {
+        setError(data.error ?? "Error del servidor");
+        setErrorCode(data.code ?? null);
+        setGenState("error");
+        return;
+      }
       setResult({
         src: b64ToDataUrl(data.audioBase64, data.mime),
         durationMs: data.durationMs,
@@ -588,6 +595,7 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");
+      setErrorCode(null);
       setGenState("error");
     }
   }, [text, lang, tab, design, refAudio, refText, selectedVoiceId, speed, quality, genState, isAuthed, anonGens]);
@@ -835,15 +843,27 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
               <ShareCard audioSrc={result.src} text={text} language={selectedLang.label} mode={tab} />
             </>
           ) : error ? (
-            <div className="glass rounded-2xl p-5 fade-up border border-red-500/20 space-y-2">
-              <p className="text-red-400 text-sm font-medium">⚠ Error</p>
+            <div className="glass rounded-2xl p-5 fade-up border border-red-500/20 space-y-3">
+              <p className="text-red-400 text-sm font-medium">
+                {errorCode === "credits_exhausted" ? "Te quedaste sin caracteres" : "⚠ Error"}
+              </p>
               <p className="text-muted text-xs">{error}</p>
-              <button
-                onClick={() => { setError(null); setGenState("idle"); }}
-                className="text-xs text-red-400 underline hover:text-red-300 transition-colors"
-              >
-                Reintentar
-              </button>
+              {errorCode === "credits_exhausted" ? (
+                <a href="/#precios" className="btn-accent inline-block px-4 py-2 rounded-xl text-xs font-semibold">
+                  Ver planes →
+                </a>
+              ) : (errorCode === "login_required" || errorCode === "anon_text_limit") ? (
+                <a href="/auth/login" className="btn-accent inline-block px-4 py-2 rounded-xl text-xs font-semibold">
+                  Registrate gratis
+                </a>
+              ) : (
+                <button
+                  onClick={() => { setError(null); setErrorCode(null); setGenState("idle"); }}
+                  className="text-xs text-red-400 underline hover:text-red-300 transition-colors"
+                >
+                  Reintentar
+                </button>
+              )}
             </div>
           ) : (
             <div className="glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center flex-1 min-h-[180px]">
