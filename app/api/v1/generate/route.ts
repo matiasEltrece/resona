@@ -65,6 +65,17 @@ export async function POST(req: NextRequest) {
 
   const service = await createServiceClient();
 
+  // ── Gate: la API es exclusiva del plan Pro ───────────────────────────────
+  const { data: prof } = await service
+    .from("kyma_profiles")
+    .select("plan")
+    .eq("id", auth.userId)
+    .single();
+  const plan = (prof as { plan?: string } | null)?.plan ?? "free";
+  if (plan !== "pro" && plan !== "admin") {
+    return err("La API está disponible solo en el plan Pro. Actualizá tu plan para usarla.", 403, "plan_required");
+  }
+
   // ── Rate limit por key (anti-abuso): máx RATE_LIMIT requests / 60s ───────
   const RATE_LIMIT = 30;
   const since = new Date(Date.now() - 60_000).toISOString();

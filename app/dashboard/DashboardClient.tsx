@@ -92,8 +92,8 @@ export default function DashboardClient({ user, credits, plan, generations, upgr
           <>
             <p className="text-sm text-muted">
               {plan === "free"
-                ? "Estás en el plan gratuito (10.000 caracteres/mes). Subí para clonar voces, sacar la marca de agua y usar la API."
-                : "Estás en Creator (200.000 caracteres/mes). Subí a Pro para 1M + API alto volumen."}
+                ? "Estás en el plan gratuito (10.000 caracteres/mes). Subí a Creator por más caracteres y clonación, o a Pro para 1M + acceso a la API."
+                : "Estás en Creator (200.000 caracteres/mes). La API es exclusiva de Pro: subí para 1M caracteres + API."}
             </p>
             <div className="flex flex-wrap gap-3">
               {plan === "free" && (

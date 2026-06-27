@@ -24,6 +24,13 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // La API (y por ende las keys) es exclusiva del plan Pro
+  const { data: profile } = await supabase.from("kyma_profiles").select("plan").eq("id", user.id).single();
+  const plan = profile?.plan ?? "free";
+  if (plan !== "pro" && plan !== "admin") {
+    return NextResponse.json({ error: "La API está disponible solo en el plan Pro." }, { status: 403 });
+  }
+
   let name = "API key";
   try {
     const body = await req.json();
