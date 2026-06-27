@@ -121,14 +121,21 @@ create table if not exists public.kyma_plans (
   name              text not null,
   price_usd         numeric(10,2),
   interval          text,
-  monthly_credits   integer,
+  monthly_credits   integer,   -- caracteres/mes
   lemon_variant_id  text
 );
+-- Límites en CARACTERES/mes (no generaciones)
 insert into public.kyma_plans (id, name, price_usd, interval, monthly_credits) values
-  ('free',    'Free',    0,  'month', 20),
-  ('creator', 'Creator', 12, 'month', 500),
-  ('pro',     'Pro',     39, 'month', null)
+  ('free',    'Free',    0,  'month', 10000),
+  ('creator', 'Creator', 12, 'month', 200000),
+  ('pro',     'Pro',     39, 'month', 1000000)
 on conflict (id) do nothing;
+
+-- RLS: los planes son de lectura pública (no hay datos secretos); escritura solo service role
+alter table public.kyma_plans enable row level security;
+do $$ begin
+  create policy "kyma: planes lectura publica" on public.kyma_plans for select using (true);
+exception when duplicate_object then null; end $$;
 
 -- ─── Trigger: crear perfil al registrarse ───────────────────────────────────
 create or replace function public.kyma_handle_new_user()
