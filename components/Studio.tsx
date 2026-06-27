@@ -604,7 +604,7 @@ export default function Studio() {
                 <span className="ml-auto text-muted">{langOpen ? "▲" : "▼"}</span>
               </button>
               {langOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 glass rounded-xl z-20 overflow-hidden border border-border shadow-2xl">
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-xl z-20 overflow-hidden border border-border shadow-2xl" style={{ background: "var(--bg-elevated)" }}>
                   <div className="p-2 border-b border-border">
                     <input
                       autoFocus
