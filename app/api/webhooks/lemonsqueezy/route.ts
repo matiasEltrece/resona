@@ -24,8 +24,8 @@ function verifySignature(payload: string, signature: string, secret: string): bo
 }
 
 type LemonPayload = {
-  meta?: { event_name?: string; custom_data?: { user_id?: string } };
-  data?: { attributes?: Record<string, unknown> };
+  meta?: { event_name?: string; custom_data?: { user_id?: string; pack_id?: string } };
+  data?: { id?: string; attributes?: Record<string, unknown> };
 };
 
 async function resolveUserId(payload: LemonPayload): Promise<string | null> {
@@ -94,17 +94,33 @@ export async function POST(req: NextRequest) {
         break;
 
       case "order_created": {
-        // Pack de créditos one-time: suma al límite del mes actual
-        if (attrs.status === "paid") {
-          const now = new Date();
-          const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-          // Sumamos 500 créditos al límite del mes (pack estándar)
-          await service.rpc("kyma_consume_credit", { p_user_id: userId, p_month: month }); // asegura fila
-          await service
-            .from("kyma_credits")
-            .update({ limit: 999999 })
-            .eq("user_id", userId)
-            .eq("month", month);
+        // Pack de créditos one-time. Identificamos el pack por custom_data.pack_id.
+        const packId = payload.meta?.custom_data?.pack_id;
+        const paid = attrs.status === "paid";
+        if (paid && packId) {
+          const orderId = String(attrs.identifier ?? payload.data?.id ?? "");
+          const { data: pack } = await service
+            .from("kyma_credit_packs")
+            .select("id, chars, price_usd")
+            .eq("id", packId)
+            .single();
+          if (pack) {
+            // Idempotencia: no sumar dos veces la misma orden
+            const { data: existing } = await service
+              .from("kyma_credit_purchases")
+              .select("id")
+              .eq("lemon_order_id", orderId)
+              .maybeSingle();
+            if (!existing) {
+              await service.rpc("kyma_add_credits", {
+                p_user_id: userId,
+                p_chars: pack.chars,
+                p_pack_id: pack.id,
+                p_amount: pack.price_usd,
+                p_order_id: orderId,
+              });
+            }
+          }
         }
         break;
       }

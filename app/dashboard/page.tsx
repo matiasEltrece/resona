@@ -15,17 +15,23 @@ export default async function DashboardPage() {
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   // Datos en paralelo
-  const [creditsRes, profileRes, gensRes] = await Promise.all([
+  const [creditsRes, profileRes, gensRes, packsRes, purchasesRes] = await Promise.all([
     service.from("kyma_credits").select("used, limit").eq("user_id", user.id).eq("month", monthKey).single(),
-    service.from("kyma_profiles").select("plan").eq("id", user.id).single(),
-    service.from("kyma_generations").select("mode, language, duration_ms, rtf, created_at, provider")
-      .eq("user_id", user.id).order("created_at", { ascending: false }).limit(8),
+    service.from("kyma_profiles").select("plan, extra_credits").eq("id", user.id).single(),
+    service.from("kyma_generations").select("mode, language, text_length, duration_ms, created_at, provider")
+      .eq("user_id", user.id).order("created_at", { ascending: false }).limit(12),
+    service.from("kyma_credit_packs").select("id, name, chars, price_usd, buy_url").eq("active", true).order("sort"),
+    service.from("kyma_credit_purchases").select("pack_id, chars, amount_usd, created_at")
+      .eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
   ]);
 
   const used = creditsRes.data?.used ?? 0;
   const limit = creditsRes.data?.limit ?? brand.free.charactersPerMonth;
   const plan = profileRes.data?.plan ?? "free";
+  const extraCredits = profileRes.data?.extra_credits ?? 0;
   const generations = gensRes.data ?? [];
+  const packs = packsRes.data ?? [];
+  const purchases = purchasesRes.data ?? [];
   const isAdmin = !!process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL;
 
   return (
@@ -33,7 +39,10 @@ export default async function DashboardPage() {
       user={{ email: user.email!, id: user.id }}
       credits={{ used, limit, month: monthKey }}
       plan={plan}
+      extraCredits={extraCredits}
       generations={generations}
+      packs={packs}
+      purchases={purchases}
       upgradeUrls={{ creator: CREATOR_URL, pro: PRO_URL }}
       isAdmin={isAdmin}
     />
