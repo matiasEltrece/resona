@@ -53,6 +53,15 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // Código PKCE que cayó en la raíz (ej. link de recuperación de contraseña)
+  // → enrutarlo al callback para canjearlo y llevar a poner la contraseña nueva.
+  if (pathname === "/" && request.nextUrl.searchParams.has("code")) {
+    const cb = request.nextUrl.clone();
+    cb.pathname = "/auth/callback";
+    if (!cb.searchParams.get("next")) cb.searchParams.set("next", "/auth/reset");
+    return NextResponse.redirect(cb);
+  }
+
   // Rutas que requieren auth de Supabase
   if ((pathname.startsWith("/dashboard") || pathname.startsWith("/studio")) && !user) {
     const loginUrl = request.nextUrl.clone();
