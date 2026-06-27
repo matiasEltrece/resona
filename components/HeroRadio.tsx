@@ -169,7 +169,7 @@ export default function HeroRadio() {
   const v = VOICES[index];
 
   return (
-    <section className="relative max-w-[1120px] mx-auto px-7 pt-[84px] pb-10 text-center">
+    <section className="relative max-w-[1120px] mx-auto px-7 pt-10 pb-8 text-center">
       <audio ref={audioRef} preload="none" crossOrigin="anonymous" />
 
       <h1 className="fade-up mx-auto max-w-[920px] font-extrabold leading-[1.04]"
@@ -196,7 +196,7 @@ export default function HeroRadio() {
       </p>
 
       {/* ── Reproductor de voces ── */}
-      <div className="relative w-full max-w-[920px] mx-auto mt-[50px]">
+      <div className="relative w-full max-w-[920px] mx-auto mt-8">
         {/* Toggle de volumen (default apagado; activa el sonido en loop) */}
         <button
           onClick={toggle}

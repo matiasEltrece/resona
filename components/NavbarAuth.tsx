@@ -6,7 +6,7 @@ export default async function NavbarAuth() {
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <nav className="sticky top-0 z-30 border-b border-border backdrop-blur-xl bg-[rgba(6,5,9,0.7)]">
+    <nav className="sticky top-0 z-40 border-b border-border backdrop-blur-xl bg-[rgba(4,3,8,0.88)]">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2">
