@@ -18,6 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <a href="/" className="text-lg font-bold text-gradient">{brand.name}</a>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted hidden sm:block">{user.email}</span>
+            <a href="/dashboard/cuenta" className="glass glass-hover text-xs px-3 py-1.5 rounded-lg">Cuenta</a>
             <form action="/api/auth/signout" method="POST">
               <button
                 type="submit"
