@@ -471,7 +471,10 @@ const DEFAULT_DESIGN: VoiceDesign = {
   pitch: "moderate",
 };
 
-export default function Studio() {
+const ANON_MAX_GENS = 3;
+const ANON_MAX_CHARS = 250;
+
+export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
   const [tab, setTab] = useState<Tab>("design");
   const [text, setText] = useState(SAMPLE_SCRIPTS[0]);
   const [lang, setLang] = useState("es");
@@ -488,7 +491,16 @@ export default function Studio() {
   const [savedVoices, setSavedVoices] = useState<SavedVoice[]>([]);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string | null>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  const [anonGens, setAnonGens] = useState(0);
 
+  useEffect(() => {
+    if (isAuthed) return;
+    const n = parseInt(localStorage.getItem("kyma_anon_gens") || "0", 10);
+    setAnonGens(Number.isNaN(n) ? 0 : n);
+  }, [isAuthed]);
+
+  const maxChars = isAuthed ? 5000 : ANON_MAX_CHARS;
+  const anonLimitReached = !isAuthed && anonGens >= ANON_MAX_GENS;
   const selectedLang = LANGUAGES.find((l) => l.code === lang) ?? LANGUAGES[0];
 
   // Cargar voces guardadas (si el usuario está logueado, devuelve la lista)
@@ -521,6 +533,21 @@ export default function Studio() {
 
   const generate = useCallback(async () => {
     if (!text.trim() || genState === "loading") return;
+
+    // ── Demo anónimo: clonar requiere login; tope de generaciones ──────────
+    if (!isAuthed) {
+      if (tab === "clone") {
+        window.location.href = "/auth/login?next=" + encodeURIComponent("/#studio");
+        return;
+      }
+      if (anonGens >= ANON_MAX_GENS) {
+        setResult(null);
+        setError("Llegaste al límite de prueba sin registro. Registrate gratis (10.000 caracteres/mes) para seguir.");
+        setGenState("error");
+        return;
+      }
+    }
+
     setGenState("loading");
     setResult(null);
     setError(null);
@@ -554,11 +581,16 @@ export default function Studio() {
         isReal: data.isReal,
       });
       setGenState("done");
+      if (!isAuthed) {
+        const n = anonGens + 1;
+        setAnonGens(n);
+        try { localStorage.setItem("kyma_anon_gens", String(n)); } catch { /* noop */ }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");
       setGenState("error");
     }
-  }, [text, lang, tab, design, refAudio, refText, selectedVoiceId, speed, quality, genState]);
+  }, [text, lang, tab, design, refAudio, refText, selectedVoiceId, speed, quality, genState, isAuthed, anonGens]);
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -585,12 +617,12 @@ export default function Studio() {
           <div className="glass rounded-2xl p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-muted uppercase tracking-widest">Texto</p>
-              <span className="text-xs text-muted">{text.length}/5000</span>
+              <span className="text-xs text-muted">{text.length}/{maxChars}{!isAuthed && " · demo"}</span>
             </div>
             <textarea
               ref={textRef}
               value={text}
-              onChange={(e) => setText(e.target.value.slice(0, 5000))}
+              onChange={(e) => setText(e.target.value.slice(0, maxChars))}
               rows={5}
               placeholder="Escribí o pegá el texto que querés generar..."
               className="w-full bg-transparent resize-none outline-none text-sm leading-relaxed placeholder:text-muted/50"
@@ -687,6 +719,14 @@ export default function Studio() {
             </p>
             {tab === "design" ? (
               <DesignPanel design={design} setDesign={setDesign} lang={lang} />
+            ) : !isAuthed ? (
+              <div className="text-center py-6 space-y-3">
+                <div className="text-3xl">🔒</div>
+                <p className="text-sm">Clonar una voz requiere una cuenta gratis.</p>
+                <a href="/auth/login" className="btn-accent inline-block px-5 py-2 rounded-xl text-sm font-medium">
+                  Registrate gratis
+                </a>
+              </div>
             ) : (
               <ClonePanel
                 onAudio={setRefAudio}
@@ -746,26 +786,35 @@ export default function Studio() {
 
         {/* ── Panel derecho ── */}
         <div className="space-y-4 flex flex-col">
-          <button
-            onClick={generate}
-            disabled={genState === "loading" || !text.trim()}
-            className={`btn-accent rounded-2xl py-5 text-lg font-semibold w-full ${genState === "loading" ? "pulse-ring" : ""}`}
-          >
-            {genState === "loading" ? (
-              <span className="flex items-center justify-center gap-3">
-                <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-                  <path d="M12 2a10 10 0 0 1 10 10" />
-                </svg>
-                <span className="flex flex-col items-start leading-tight">
-                  <span>Generando…</span>
-                  <span className="text-xs opacity-60 font-normal">primera vez puede tardar ~60s</span>
+          {anonLimitReached ? (
+            <a
+              href="/auth/login?next=%2F%23studio"
+              className="btn-accent rounded-2xl py-5 text-lg font-semibold w-full text-center"
+            >
+              Registrate gratis para seguir ✦
+            </a>
+          ) : (
+            <button
+              onClick={generate}
+              disabled={genState === "loading" || !text.trim()}
+              className={`btn-accent rounded-2xl py-5 text-lg font-semibold w-full ${genState === "loading" ? "pulse-ring" : ""}`}
+            >
+              {genState === "loading" ? (
+                <span className="flex items-center justify-center gap-3">
+                  <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                    <path d="M12 2a10 10 0 0 1 10 10" />
+                  </svg>
+                  <span className="flex flex-col items-start leading-tight">
+                    <span>Generando…</span>
+                    <span className="text-xs opacity-60 font-normal">primera vez puede tardar ~60s</span>
+                  </span>
                 </span>
-              </span>
-            ) : (
-              "✦ Generar voz"
-            )}
-          </button>
+              ) : (
+                "✦ Generar voz"
+              )}
+            </button>
+          )}
 
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
