@@ -849,8 +849,8 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
               </p>
               <p className="text-muted text-xs">{error}</p>
               {errorCode === "credits_exhausted" ? (
-                <a href="/#precios" className="btn-accent inline-block px-4 py-2 rounded-xl text-xs font-semibold">
-                  Ver planes →
+                <a href="/dashboard" className="btn-accent inline-block px-4 py-2 rounded-xl text-xs font-semibold">
+                  Comprar créditos o subir de plan →
                 </a>
               ) : (errorCode === "login_required" || errorCode === "anon_text_limit") ? (
                 <a href="/auth/login" className="btn-accent inline-block px-4 py-2 rounded-xl text-xs font-semibold">

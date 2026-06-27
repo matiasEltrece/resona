@@ -85,6 +85,13 @@ export async function POST(req: NextRequest) {
           .single();
         // Si no hay mapeo, asumimos 'creator' como default pago
         await setPlan(userId, plan?.id ?? "creator");
+        // Guardar el portal de cliente de Lemon (para gestionar/cancelar la suscripción)
+        const urls = attrs.urls as { customer_portal?: string } | undefined;
+        if (urls?.customer_portal) {
+          await service.from("kyma_profiles")
+            .update({ lemon_customer_portal_url: urls.customer_portal })
+            .eq("id", userId);
+        }
         break;
       }
       case "subscription_cancelled":

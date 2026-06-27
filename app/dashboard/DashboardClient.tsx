@@ -29,6 +29,7 @@ interface Props {
   credits: { used: number; limit: number; month: string };
   plan: string;
   extraCredits: number;
+  portalUrl?: string | null;
   generations: Generation[];
   packs: Pack[];
   purchases: Purchase[];
@@ -38,7 +39,7 @@ interface Props {
 
 const PLAN_LABEL: Record<string, string> = { free: "Gratis", creator: "Creator", pro: "Pro", admin: "Admin" };
 
-export default function DashboardClient({ user, credits, plan, extraCredits, generations, packs, purchases, upgradeUrls, isAdmin }: Props) {
+export default function DashboardClient({ user, credits, plan, extraCredits, portalUrl, generations, packs, purchases, upgradeUrls, isAdmin }: Props) {
   const unlimited = credits.limit >= 1_000_000_000;
   const pct = Math.min(100, Math.round((credits.used / credits.limit) * 100));
   const monthlyRemaining = Math.max(0, credits.limit - credits.used);
@@ -172,6 +173,11 @@ export default function DashboardClient({ user, credits, plan, extraCredits, gen
                 <a href={upgradeUrls.pro} className={`rounded-xl px-5 py-2 text-sm font-semibold ${plan === "free" ? "glass glass-hover" : "btn-accent"}`}>Pro · $39/mes</a>
               </div>
             </>
+          )}
+          {portalUrl && (
+            <a href={portalUrl} target="_blank" rel="noreferrer" className="inline-block text-sm underline text-muted hover:text-white">
+              Gestionar suscripción (cambiar plan, método de pago o cancelar) →
+            </a>
           )}
         </div>
       )}
