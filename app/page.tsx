@@ -158,7 +158,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex gap-[14px] justify-center flex-wrap">
               <a href="#studio" className="btn-accent rounded-full font-semibold inline-flex items-center px-7" style={{ height: 52 }}>Empezá gratis ✦</a>
-              <a href="/dashboard/api" className="glass glass-hover rounded-full font-semibold inline-flex items-center px-7" style={{ height: 52 }}>Ver la API</a>
+              <a href="/docs" className="glass glass-hover rounded-full font-semibold inline-flex items-center px-7" style={{ height: 52 }}>Ver la API</a>
             </div>
           </div>
         </div>
