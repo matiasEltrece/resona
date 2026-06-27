@@ -32,16 +32,19 @@ export default function LoginForm({
     const creds = { email: email.trim().toLowerCase(), password };
 
     if (mode === "signup") {
-      const { data, error: err } = await supabase.auth.signUp(creds);
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+      const { data, error: err } = await supabase.auth.signUp({
+        ...creds,
+        options: { emailRedirectTo: redirectTo },
+      });
       if (err) { setError(err.message); setState("idle"); return; }
       if (data.session) {
-        // Sin confirmación de email → sesión lista, al dashboard
+        // (Si en algún momento se desactiva la confirmación) → sesión lista
         window.location.href = next;
         return;
       }
-      // Con confirmación de email activada en Supabase
-      setInfo("Cuenta creada. Si pide confirmación, revisá tu correo; si no, ya podés ingresar.");
-      setMode("signin");
+      // Confirmación por email activada → avisar que revise el correo
+      setInfo("¡Cuenta creada! Te enviamos un email para confirmarla. Hacé clic en el link y entrás directo al dashboard.");
       setState("idle");
     } else {
       const { error: err } = await supabase.auth.signInWithPassword(creds);
