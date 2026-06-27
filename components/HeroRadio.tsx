@@ -11,7 +11,7 @@ const VOICES: Voice[] = [
   { name: "Atlas",  char: "profunda",     lang: "EN-GB", flag: "🇬🇧", glow: "rgba(124,92,255,0.44)", src: "/radio/atlas.wav" },
   { name: "Nova",   char: "enérgica",     lang: "PT-BR", flag: "🇧🇷", glow: "rgba(34,211,238,0.42)", src: "/radio/nova.wav" },
   { name: "Sora",   char: "suave",        lang: "JA",    flag: "🇯🇵", glow: "rgba(124,92,255,0.36)", src: "/radio/sora.wav" },
-  { name: "Echo",   char: "susurro ASMR", lang: "ES",    flag: "🇪🇸", glow: "rgba(34,211,238,0.34)", src: "/radio/echo.wav" },
+  { name: "Echo",   char: "suave",        lang: "ES",    flag: "🇪🇸", glow: "rgba(34,211,238,0.34)", src: "/radio/echo.wav" },
   { name: "Leo",    char: "narrador",     lang: "IT",    flag: "🇮🇹", glow: "rgba(217,70,239,0.38)", src: "/radio/leo.wav" },
 ];
 
