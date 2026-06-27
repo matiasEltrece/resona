@@ -32,7 +32,10 @@ export default function AccountClient({ email, isAdmin }: { email: string; isAdm
   const changeEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmState("loading"); setEmMsg(null);
-    const { error } = await createClient().auth.updateUser({ email: newEmail.trim().toLowerCase() });
+    const { error } = await createClient().auth.updateUser(
+      { email: newEmail.trim().toLowerCase() },
+      { emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard/cuenta` },
+    );
     setEmState("idle");
     if (error) setEmMsg({ ok: false, text: "No se pudo iniciar el cambio." });
     else { setEmMsg({ ok: true, text: "Te enviamos un email al nuevo correo para confirmar el cambio." }); setNewEmail(""); }
