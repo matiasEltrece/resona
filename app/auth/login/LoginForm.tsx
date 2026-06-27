@@ -2,7 +2,6 @@
 
 import { useState, use } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { brand } from "@/lib/brand";
 
 export default function LoginForm({
   searchParams,
@@ -11,97 +10,101 @@ export default function LoginForm({
 }) {
   const params = use(searchParams);
   const next = params?.next ?? "/dashboard";
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
-  const [state, setState] = useState<"idle" | "loading" | "sent" | "error">("idle");
+  const [password, setPassword] = useState("");
+  const [state, setState] = useState<"idle" | "loading">("idle");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || state === "loading") return;
+    if (state === "loading") return;
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
     setState("loading");
     setError("");
+    setInfo("");
 
     const supabase = createClient();
-    const callbackUrl = new URL("/auth/callback", window.location.origin);
-    callbackUrl.searchParams.set("next", next);
+    const creds = { email: email.trim().toLowerCase(), password };
 
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: callbackUrl.toString() },
-    });
-
-    if (err) {
-      setError(err.message);
-      setState("error");
+    if (mode === "signup") {
+      const { data, error: err } = await supabase.auth.signUp(creds);
+      if (err) { setError(err.message); setState("idle"); return; }
+      if (data.session) {
+        // Sin confirmación de email → sesión lista, al dashboard
+        window.location.href = next;
+        return;
+      }
+      // Con confirmación de email activada en Supabase
+      setInfo("Cuenta creada. Si pide confirmación, revisá tu correo; si no, ya podés ingresar.");
+      setMode("signin");
+      setState("idle");
     } else {
-      setState("sent");
+      const { error: err } = await supabase.auth.signInWithPassword(creds);
+      if (err) { setError("Email o contraseña incorrectos."); setState("idle"); return; }
+      window.location.href = next;
     }
   };
 
-  if (state === "sent") {
-    return (
-      <div className="text-center space-y-3 py-4 fade-up">
-        <div className="text-4xl">📬</div>
-        <p className="font-semibold">Revisá tu correo</p>
-        <p className="text-sm text-muted">
-          Enviamos un link a <strong className="text-white">{email}</strong>.
-          <br />Hacé clic en él para ingresar.
-        </p>
-        <button
-          onClick={() => { setState("idle"); setEmail(""); }}
-          className="text-xs text-muted underline mt-2 hover:text-white transition-colors"
-        >
-          Usar otro email
-        </button>
-      </div>
-    );
-  }
-
   return (
     <form onSubmit={submit} className="space-y-4">
+      {/* Tabs registro / ingreso */}
+      <div className="flex gap-1 p-1 glass rounded-xl text-sm">
+        {(["signin", "signup"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => { setMode(m); setError(""); setInfo(""); }}
+            className={`flex-1 py-2 rounded-lg font-medium transition-all ${
+              mode === m ? "bg-white/10 text-white ring-accent" : "text-muted hover:text-white"
+            }`}
+          >
+            {m === "signin" ? "Ingresar" : "Crear cuenta"}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-1.5">
-        <label htmlFor="email" className="text-xs text-muted uppercase tracking-widest">
-          Email
-        </label>
+        <label htmlFor="email" className="text-xs text-muted uppercase tracking-widest">Email</label>
         <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="vos@ejemplo.com"
-          required
-          autoFocus
+          id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          placeholder="vos@ejemplo.com" required autoFocus autoComplete="email"
           className="w-full glass rounded-xl px-4 py-3 text-sm outline-none focus:ring-accent placeholder:text-muted/40 transition-all"
         />
       </div>
 
-      {state === "error" && (
-        <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">
-          {error}
-        </p>
-      )}
+      <div className="space-y-1.5">
+        <label htmlFor="password" className="text-xs text-muted uppercase tracking-widest">Contraseña</label>
+        <input
+          id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••" required minLength={6}
+          autoComplete={mode === "signup" ? "new-password" : "current-password"}
+          className="w-full glass rounded-xl px-4 py-3 text-sm outline-none focus:ring-accent placeholder:text-muted/40 transition-all"
+        />
+      </div>
+
+      {error && <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
+      {info && <p className="text-xs text-green-400 bg-green-500/10 rounded-lg px-3 py-2">{info}</p>}
 
       <button
-        type="submit"
-        disabled={state === "loading" || !email.trim()}
+        type="submit" disabled={state === "loading" || !email.trim() || !password}
         className="btn-accent w-full py-3 rounded-xl text-sm font-semibold"
       >
         {state === "loading" ? (
           <span className="flex items-center justify-center gap-2">
             <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-              <path d="M12 2a10 10 0 0 1 10 10" />
+              <circle cx="12" cy="12" r="10" strokeOpacity="0.25" /><path d="M12 2a10 10 0 0 1 10 10" />
             </svg>
-            Enviando…
+            {mode === "signup" ? "Creando…" : "Ingresando…"}
           </span>
         ) : (
-          "Enviar link mágico ✦"
+          mode === "signup" ? "Crear cuenta gratis ✦" : "Ingresar"
         )}
       </button>
-
-      <p className="text-center text-xs text-muted">
-        Plan gratuito: {brand.free.charactersPerMonth.toLocaleString("es")} caracteres / mes
-      </p>
     </form>
   );
 }

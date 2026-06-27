@@ -24,9 +24,9 @@ export default function LoginPage({
           style={{ borderRadius: "var(--radius-xl)", padding: "32px", boxShadow: "var(--shadow-card)" }}
         >
           <div className="mb-6">
-            <h1 className="text-xl font-semibold">Ingresá con tu email</h1>
+            <h1 className="text-xl font-semibold">Tu cuenta de {brand.name}</h1>
             <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-              Te mandamos un link mágico — sin contraseña.
+              Email y contraseña. 10.000 caracteres gratis al mes.
             </p>
           </div>
           <LoginForm searchParams={searchParams} />
