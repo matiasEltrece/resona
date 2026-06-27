@@ -1,8 +1,6 @@
-import Studio from "@/components/Studio";
 import NavbarAuth from "@/components/NavbarAuth";
 import HeroRadio from "@/components/HeroRadio";
 import { brand } from "@/lib/brand";
-import { createClient } from "@/lib/supabase/server";
 
 const CREATOR_URL = process.env.NEXT_PUBLIC_LEMON_CREATOR_BUY_URL ?? "https://synthetic-ai.lemonsqueezy.com/checkout/buy/2be79926-5aa3-4738-a169-558105a8c7ea";
 const PRO_URL = process.env.NEXT_PUBLIC_LEMON_PRO_BUY_URL ?? "https://synthetic-ai.lemonsqueezy.com/checkout/buy/d3e10379-5257-4f13-b560-f0286c4b8be1";
@@ -32,7 +30,7 @@ const STATS = [
 const PLANS = [
   { name: "Gratis", price: "$0", per: "/mes", featured: false, tagline: "Para probar y proyectos chicos.",
     features: ["10.000 caracteres / mes", "Voces estándar", "Generación en <1s", "646 idiomas"],
-    cta: "Empezar gratis", href: "/auth/login" },
+    cta: "Empezar gratis", href: "/studio" },
   { name: "Creator", price: "$12", per: "/mes", featured: true, tagline: "Para creadores que producen seguido.",
     features: ["200.000 caracteres / mes", "Clonación de voz", "Sin marca de agua", "Descarga en alta calidad"],
     cta: "Probar Creator", href: CREATOR_URL },
@@ -41,22 +39,13 @@ const PLANS = [
     cta: "Ir a Pro", href: PRO_URL },
 ];
 
-export default async function Home() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const isAuthed = !!user;
-
+export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       <NavbarAuth />
 
       {/* ── Hero + Radio ── */}
       <HeroRadio />
-
-      {/* ── Studio (la herramienta real) ── */}
-      <section id="studio" className="pb-10 pt-4">
-        <Studio isAuthed={isAuthed} />
-      </section>
 
       {/* ── Features ── */}
       <section id="features" className="relative max-w-[1024px] mx-auto px-7 pt-10 pb-14">
@@ -162,7 +151,7 @@ export default async function Home() {
               Cualquier voz. Cualquier idioma. En segundos.
             </p>
             <div className="mt-8 flex gap-[14px] justify-center flex-wrap">
-              <a href="#studio" className="btn-accent rounded-full font-semibold inline-flex items-center px-7" style={{ height: 52 }}>Empezá gratis ✦</a>
+              <a href="/studio" className="btn-accent rounded-full font-semibold inline-flex items-center px-7" style={{ height: 52 }}>Empezá gratis ✦</a>
               <a href="/docs" className="glass glass-hover rounded-full font-semibold inline-flex items-center px-7" style={{ height: 52 }}>Ver la API</a>
             </div>
           </div>

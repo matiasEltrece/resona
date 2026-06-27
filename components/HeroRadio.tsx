@@ -184,15 +184,15 @@ export default function HeroRadio() {
       </p>
 
       <div className="fade-up mt-[34px] flex gap-[14px] justify-center flex-wrap">
-        <a href="#studio" className="btn-accent rounded-full font-semibold inline-flex items-center px-7" style={{ height: 52 }}>
-          Probalo gratis — sin registro
+        <a href="/studio" className="btn-accent rounded-full font-semibold inline-flex items-center px-7" style={{ height: 52 }}>
+          Empezar gratis ✦
         </a>
         <button onClick={toggle} className="glass glass-hover rounded-full font-semibold inline-flex items-center px-7" style={{ height: 52 }}>
           {playing ? "⏸ Pausar" : "▶ Escuchar voces"}
         </button>
       </div>
       <p className="fade-up mt-4 text-[length:var(--text-xs)]" style={{ color: "var(--text-muted)" }}>
-        10.000 caracteres gratis al mes · Cancelás cuando quieras
+        10.000 caracteres gratis al mes · Sin tarjeta
       </p>
 
       {/* ── Reproductor de voces ── */}
