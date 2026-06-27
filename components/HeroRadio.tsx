@@ -78,7 +78,7 @@ export default function HeroRadio() {
   const next = useCallback(() => select(indexRef.current + 1), [select]);
   const prev = useCallback(() => select(indexRef.current - 1), [select]);
 
-  // Auto-avanza a la siguiente voz al terminar (efecto radio)
+  // Auto-avanza a la siguiente voz al terminar (efecto radio en loop)
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -86,6 +86,13 @@ export default function HeroRadio() {
     a.addEventListener("ended", onEnded);
     return () => a.removeEventListener("ended", onEnded);
   }, [select]);
+
+  // Con el sonido apagado, la radio "escanea" estaciones sola (queda viva)
+  useEffect(() => {
+    if (playing) return;
+    const id = setInterval(() => setIndex((i) => (i + 1) % VOICES.length), 5000);
+    return () => clearInterval(id);
+  }, [playing]);
 
   // Loop de dibujo del ecualizador (FFT real)
   useEffect(() => {
@@ -190,6 +197,20 @@ export default function HeroRadio() {
 
       {/* ── Reproductor de voces ── */}
       <div className="relative w-full max-w-[920px] mx-auto mt-[50px]">
+        {/* Toggle de volumen (default apagado; activa el sonido en loop) */}
+        <button
+          onClick={toggle}
+          aria-label={playing ? "Silenciar voces" : "Activar sonido"}
+          className="absolute top-0 right-0 z-[3] glass glass-hover rounded-full flex items-center justify-center"
+          style={{ width: 40, height: 40, color: playing ? "var(--text-primary)" : "var(--text-secondary)" }}
+        >
+          {playing ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" /></svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></svg>
+          )}
+        </button>
+
         <div className="absolute pointer-events-none" style={{
           left: "50%", top: "40%", transform: "translate(-50%,-50%)", width: "78%", height: 300,
           background: `radial-gradient(56% 60% at 50% 50%, ${v.glow}, rgba(124,92,255,0.12) 48%, transparent 72%)`,
