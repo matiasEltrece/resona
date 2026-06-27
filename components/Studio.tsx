@@ -28,22 +28,58 @@ function b64ToDataUrl(b64: string, mime: string) {
 
 /* ─── subcomponentes de UI ───────────────────────────────────────────────── */
 
-function WaveViz({ playing }: { playing: boolean }) {
-  const heights = [30, 55, 80, 100, 70, 45, 85, 60, 40, 75, 50, 90, 35, 65, 80];
+/** Onda REAL del audio: decodifica el WAV y dibuja la amplitud verdadera.
+ *  La parte ya reproducida va en degradé; el resto, atenuado. */
+function RealWave({ src, progress }: { src: string; progress: number }) {
+  const [peaks, setPeaks] = useState<number[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(src);
+        const buf = await res.arrayBuffer();
+        const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const ctx = new AC();
+        const audio = await ctx.decodeAudioData(buf);
+        const data = audio.getChannelData(0);
+        const N = 56;
+        const block = Math.max(1, Math.floor(data.length / N));
+        const out: number[] = [];
+        for (let i = 0; i < N; i++) {
+          let peak = 0;
+          for (let j = 0; j < block; j++) {
+            const v = Math.abs(data[i * block + j] || 0);
+            if (v > peak) peak = v;
+          }
+          out.push(peak);
+        }
+        const max = Math.max(...out, 0.01);
+        if (!cancelled) setPeaks(out.map((p) => p / max));
+        ctx.close();
+      } catch { /* fallback abajo */ }
+    })();
+    return () => { cancelled = true; };
+  }, [src]);
+
+  const bars = peaks.length ? peaks : new Array(56).fill(0.12);
   return (
-    <div className="flex items-end gap-[3px] h-12">
-      {heights.map((h, i) => (
-        <div
-          key={i}
-          className="bar"
-          style={{
-            height: playing ? `${h}%` : "18%",
-            animationDelay: `${i * 0.07}s`,
-            animationPlayState: playing ? "running" : "paused",
-            transition: "height 0.3s ease",
-          }}
-        />
-      ))}
+    <div className="flex items-center gap-[2px] h-12 flex-1">
+      {bars.map((h, i) => {
+        const played = (i / bars.length) * 100 <= progress;
+        return (
+          <div
+            key={i}
+            style={{
+              flex: 1,
+              height: `${Math.max(8, h * 100)}%`,
+              borderRadius: 2,
+              background: played ? "var(--brand-gradient-vert)" : "rgba(255,255,255,0.16)",
+              transition: "background 0.1s ease",
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -106,7 +142,7 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
             </svg>
           )}
         </button>
-        <WaveViz playing={playing} />
+        <RealWave src={result.src} progress={progress} />
         <div className="ml-auto text-xs text-muted font-mono">
           {fmt(currentTime)} / {fmt(duration)}
         </div>
