@@ -38,13 +38,20 @@ export default function LoginForm({
         options: { emailRedirectTo: redirectTo },
       });
       if (err) { setError(err.message); setState("idle"); return; }
+      // Supabase devuelve identities=[] cuando el email YA tiene cuenta (anti-spam)
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        setError("Ese email ya tiene una cuenta. Probá ingresar (pestaña «Ingresar»).");
+        setMode("signin");
+        setState("idle");
+        return;
+      }
       if (data.session) {
         // (Si en algún momento se desactiva la confirmación) → sesión lista
         window.location.href = next;
         return;
       }
       // Confirmación por email activada → avisar que revise el correo
-      setInfo("¡Cuenta creada! Te enviamos un email para confirmarla. Hacé clic en el link y entrás directo al dashboard.");
+      setInfo("✅ Cuenta creada. Te mandamos un email de confirmación — abrilo y hacé clic en el link para activar tu cuenta y entrar al dashboard.");
       setState("idle");
     } else {
       const { error: err } = await supabase.auth.signInWithPassword(creds);
