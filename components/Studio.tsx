@@ -592,7 +592,7 @@ export default function Studio() {
           </div>
 
           {/* Idioma */}
-          <div className="glass rounded-2xl p-4 space-y-2">
+          <div className="glass rounded-2xl p-4 space-y-2 relative z-30">
             <p className="text-xs text-muted uppercase tracking-widest">Idioma <span className="opacity-50">· 646 disponibles</span></p>
             <div className="relative">
               <button
