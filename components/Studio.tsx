@@ -8,6 +8,7 @@ import {
 } from "@/lib/catalog";
 import type { GenerateRequest, VoiceDesign, Quality } from "@/lib/inference/types";
 import ShareCard from "./ShareCard";
+import VoiceOrb from "./VoiceOrb";
 
 /* ─── tipos locales ──────────────────────────────────────────────────────── */
 type Tab = "design" | "clone";
@@ -28,73 +29,35 @@ function b64ToDataUrl(b64: string, mime: string) {
 
 /* ─── subcomponentes de UI ───────────────────────────────────────────────── */
 
-/** Onda REAL del audio: decodifica el WAV y dibuja la amplitud verdadera.
- *  La parte ya reproducida va en degradé; el resto, atenuado. */
-function RealWave({ src, progress }: { src: string; progress: number }) {
-  const [peaks, setPeaks] = useState<number[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(src);
-        const buf = await res.arrayBuffer();
-        const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        const ctx = new AC();
-        const audio = await ctx.decodeAudioData(buf);
-        const data = audio.getChannelData(0);
-        const N = 56;
-        const block = Math.max(1, Math.floor(data.length / N));
-        const out: number[] = [];
-        for (let i = 0; i < N; i++) {
-          let peak = 0;
-          for (let j = 0; j < block; j++) {
-            const v = Math.abs(data[i * block + j] || 0);
-            if (v > peak) peak = v;
-          }
-          out.push(peak);
-        }
-        const max = Math.max(...out, 0.01);
-        if (!cancelled) setPeaks(out.map((p) => p / max));
-        ctx.close();
-      } catch { /* fallback abajo */ }
-    })();
-    return () => { cancelled = true; };
-  }, [src]);
-
-  const bars = peaks.length ? peaks : new Array(56).fill(0.12);
-  return (
-    <div className="flex items-center gap-[2px] h-12 flex-1">
-      {bars.map((h, i) => {
-        const played = (i / bars.length) * 100 <= progress;
-        return (
-          <div
-            key={i}
-            style={{
-              flex: 1,
-              height: `${Math.max(8, h * 100)}%`,
-              borderRadius: 2,
-              background: played ? "var(--brand-gradient-vert)" : "var(--c-track)",
-              transition: "background 0.1s ease",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
 function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const ctxRef = useRef<AudioContext | null>(null);
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const duration = result.durationMs / 1000;
 
-  const toggle = () => {
+  const ensureAudio = () => {
+    if (ctxRef.current || !audioRef.current) return;
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AC();
+    const an = ctx.createAnalyser();
+    an.fftSize = 512;
+    an.smoothingTimeConstant = 0.82;
+    ctx.createMediaElementSource(audioRef.current).connect(an);
+    an.connect(ctx.destination);
+    ctxRef.current = ctx;
+    setAnalyser(an);
+  };
+  useEffect(() => () => { ctxRef.current?.close().catch(() => {}); }, []);
+
+  const toggle = async () => {
     if (!audioRef.current) return;
+    ensureAudio();
+    if (ctxRef.current?.state === "suspended") await ctxRef.current.resume();
     if (playing) audioRef.current.pause();
-    else audioRef.current.play();
+    else await audioRef.current.play().catch(() => {});
     setPlaying(!playing);
   };
 
@@ -123,36 +86,36 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
   };
 
   return (
-    <div className="glass rounded-xl p-5 fade-up space-y-4">
+    <div className="glass rounded-xl p-4 fade-up space-y-3">
       <audio ref={audioRef} src={result.src} onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} />
 
-      <div className="flex items-center gap-4">
+      <VoiceOrb analyser={analyser} playing={playing} height={184} />
+
+      <div className="flex items-center gap-3">
         <button
           onClick={toggle}
-          className="w-12 h-12 rounded-full btn-accent flex items-center justify-center flex-shrink-0"
+          className="w-11 h-11 rounded-full btn-accent flex items-center justify-center flex-shrink-0"
           aria-label={playing ? "Pausar" : "Reproducir"}
         >
           {playing ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
               <rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" />
             </svg>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="5,3 19,12 5,21" />
             </svg>
           )}
         </button>
-        <RealWave src={result.src} progress={progress} />
-        <div className="ml-auto text-xs text-muted font-mono">
+        <input
+          type="range" min="0" max="100" value={progress} onChange={seek}
+          className="seek-bar flex-1"
+          style={{ background: `linear-gradient(to right, var(--accent-from) ${progress}%, var(--c-track) ${progress}%)` }}
+        />
+        <div className="text-xs text-muted font-mono flex-shrink-0">
           {fmt(currentTime)} / {fmt(duration)}
         </div>
       </div>
-
-      <input
-        type="range" min="0" max="100" value={progress} onChange={seek}
-        className="seek-bar w-full"
-        style={{ background: `linear-gradient(to right, var(--accent-from) ${progress}%, var(--c-track) ${progress}%)` }}
-      />
 
       <div className="flex items-center justify-between text-xs text-muted">
         <div className="flex gap-3">
@@ -855,6 +818,42 @@ export default function Studio() {
             </div>
           </div>
 
+          {/* Etapa · orb + resultado */}
+          {result ? (
+            <>
+              <AudioPlayer result={result} onNew={() => { setResult(null); setGenState("idle"); }} />
+              <ShareCard audioSrc={result.src} text={text} language={selectedLang.label} mode={tab} />
+            </>
+          ) : error ? (
+            <div className="glass rounded-xl p-5 fade-up border border-red-500/20 space-y-3">
+              <p className="text-red-400 text-sm font-medium">
+                {errorCode === "credits_exhausted" ? "Te quedaste sin caracteres" : "⚠ Error"}
+              </p>
+              <p className="text-muted text-xs">{error}</p>
+              {errorCode === "credits_exhausted" ? (
+                <a href="/dashboard" className="btn-accent inline-block px-4 py-2 rounded-xl text-xs font-semibold">
+                  Comprar créditos o subir de plan →
+                </a>
+              ) : errorCode === "login_required" ? (
+                <a href="/auth/login" className="btn-accent inline-block px-4 py-2 rounded-xl text-xs font-semibold">
+                  Iniciar sesión
+                </a>
+              ) : (
+                <button
+                  onClick={() => { setError(null); setErrorCode(null); setGenState("idle"); }}
+                  className="text-xs text-red-400 underline hover:text-red-300 transition-colors"
+                >
+                  Reintentar
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="glass rounded-xl p-4 flex flex-col items-center justify-center text-center">
+              <VoiceOrb analyser={null} playing={false} height={184} />
+              <p className="text-muted text-sm" style={{ marginTop: -6 }}>Generá una voz para escucharla acá</p>
+            </div>
+          )}
+
           {/* Ajustes de generación (colapsado) */}
           <details className="glass rounded-xl p-4 group">
             <summary className="text-xs text-muted uppercase tracking-widest cursor-pointer select-none flex items-center">
@@ -938,45 +937,6 @@ export default function Studio() {
               </div>
             ))}
           </div>
-
-          {result ? (
-            <>
-              <AudioPlayer result={result} onNew={() => { setResult(null); setGenState("idle"); }} />
-              <ShareCard audioSrc={result.src} text={text} language={selectedLang.label} mode={tab} />
-            </>
-          ) : error ? (
-            <div className="glass rounded-xl p-5 fade-up border border-red-500/20 space-y-3">
-              <p className="text-red-400 text-sm font-medium">
-                {errorCode === "credits_exhausted" ? "Te quedaste sin caracteres" : "⚠ Error"}
-              </p>
-              <p className="text-muted text-xs">{error}</p>
-              {errorCode === "credits_exhausted" ? (
-                <a href="/dashboard" className="btn-accent inline-block px-4 py-2 rounded-xl text-xs font-semibold">
-                  Comprar créditos o subir de plan →
-                </a>
-              ) : errorCode === "login_required" ? (
-                <a href="/auth/login" className="btn-accent inline-block px-4 py-2 rounded-xl text-xs font-semibold">
-                  Iniciar sesión
-                </a>
-              ) : (
-                <button
-                  onClick={() => { setError(null); setErrorCode(null); setGenState("idle"); }}
-                  className="text-xs text-red-400 underline hover:text-red-300 transition-colors"
-                >
-                  Reintentar
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="glass rounded-xl p-6 flex flex-col items-center justify-center gap-2.5 text-center min-h-[120px]">
-              <div className="flex items-end gap-[3px] h-10 opacity-30">
-                {[30, 55, 80, 45, 90, 60, 75, 40, 85, 50].map((h, i) => (
-                  <div key={i} className="bar" style={{ height: `${h}%`, animationPlayState: "paused" }} />
-                ))}
-              </div>
-              <p className="text-muted text-sm">Tu audio aparecerá acá</p>
-            </div>
-          )}
 
           {/* Guía de voces */}
           <VoiceGuide onRecipe={(d) => { setTab("design"); setDesign(d); }} />
