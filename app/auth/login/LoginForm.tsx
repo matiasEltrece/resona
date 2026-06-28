@@ -1,7 +1,18 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, use, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (el: HTMLElement, opts: Record<string, unknown>) => string;
+      reset: (id?: string) => void;
+    };
+  }
+}
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 export default function LoginForm({
   searchParams,
@@ -16,6 +27,34 @@ export default function LoginForm({
   const [state, setState] = useState<"idle" | "loading">("idle");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const turnstileRef = useRef<HTMLDivElement | null>(null);
+
+  // Renderiza el CAPTCHA de Turnstile en modo registro (si hay site key configurada)
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY || mode !== "signup") return;
+    const render = () => {
+      const el = turnstileRef.current;
+      if (window.turnstile && el && el.childElementCount === 0) {
+        window.turnstile.render(el, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (t: string) => setCaptchaToken(t),
+          "expired-callback": () => setCaptchaToken(""),
+          "error-callback": () => setCaptchaToken(""),
+        });
+      }
+    };
+    const id = "cf-turnstile-script";
+    if (!document.getElementById(id)) {
+      const s = document.createElement("script");
+      s.id = id;
+      s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      s.async = true; s.defer = true; s.onload = render;
+      document.head.appendChild(s);
+    } else {
+      render();
+    }
+  }, [mode]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +86,7 @@ export default function LoginForm({
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
       const { data, error: err } = await supabase.auth.signUp({
         ...creds,
-        options: { emailRedirectTo: redirectTo },
+        options: { emailRedirectTo: redirectTo, captchaToken: captchaToken || undefined },
       });
       if (err) { setError(err.message); setState("idle"); return; }
       // Supabase devuelve identities=[] cuando el email YA tiene cuenta (anti-spam)
@@ -127,11 +166,16 @@ export default function LoginForm({
         <p className="text-xs text-muted">Te enviamos un link a tu email para crear una contraseña nueva.</p>
       )}
 
+      {/* CAPTCHA anti-bot (Cloudflare Turnstile) — solo en registro y si hay site key */}
+      {mode === "signup" && TURNSTILE_SITE_KEY && (
+        <div ref={turnstileRef} className="flex justify-center" />
+      )}
+
       {error && <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
       {info && <p className="text-xs text-green-400 bg-green-500/10 rounded-lg px-3 py-2">{info}</p>}
 
       <button
-        type="submit" disabled={state === "loading" || !email.trim() || (mode !== "reset" && !password)}
+        type="submit" disabled={state === "loading" || !email.trim() || (mode !== "reset" && !password) || (mode === "signup" && !!TURNSTILE_SITE_KEY && !captchaToken)}
         className="btn-accent w-full py-3 rounded-xl text-sm font-semibold"
       >
         {state === "loading" ? (
