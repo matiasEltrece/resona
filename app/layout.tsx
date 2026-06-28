@@ -8,7 +8,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: "Kyma — Estudio de voz con IA",
   description:
-    "Cloná cualquier voz con 10 segundos de audio o diseñala desde cero. Más de 600 idiomas con calidad de estudio.",
+    "Cloná cualquier voz con 10 segundos de audio o diseñala desde cero. 646 idiomas con calidad de estudio.",
   keywords: ["voz ia", "voice cloning", "tts", "text to speech", "ia español", "kyma"],
   openGraph: {
     title: "Kyma — Cualquier voz. Cualquier idioma.",

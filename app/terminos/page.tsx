@@ -7,7 +7,7 @@ export default function TerminosPage() {
   return (
     <main className="max-w-3xl mx-auto px-4 py-16 space-y-6">
       <Link href="/" className="text-sm text-muted hover:text-white">← Volver</Link>
-      <h1 className="text-3xl font-bold gradient-text">Términos de servicio</h1>
+      <h1 className="text-3xl font-bold text-gradient">Términos de servicio</h1>
       <p className="text-xs text-muted">Última actualización: junio 2026</p>
 
       <div className="space-y-6 text-sm text-white/70 leading-relaxed">

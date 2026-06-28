@@ -34,20 +34,12 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // ── Demo anónimo (sin login): solo diseño, texto corto ───────────────────
+  // ── Login obligatorio para usar el producto ─────────────────────────────
   if (!user) {
-    if (body.mode === "clone" || body.referenceAudioBase64 || body.savedVoiceId) {
-      return NextResponse.json(
-        { error: "Registrate gratis para clonar voces.", code: "login_required" },
-        { status: 401 },
-      );
-    }
-    if (body.text.length > 250) {
-      return NextResponse.json(
-        { error: "Sin registro podés generar hasta 250 caracteres. Registrate gratis para textos largos.", code: "anon_text_limit" },
-        { status: 403 },
-      );
-    }
+    return NextResponse.json(
+      { error: "Iniciá sesión para generar voces.", code: "login_required" },
+      { status: 401 },
+    );
   }
 
   if (user) {

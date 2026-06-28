@@ -41,7 +41,7 @@ const PLAN_LABEL: Record<string, string> = { free: "Gratis", creator: "Creator",
 
 export default function DashboardClient({ user, credits, plan, extraCredits, portalUrl, generations, packs, purchases, upgradeUrls, isAdmin }: Props) {
   const unlimited = credits.limit >= 1_000_000_000;
-  const pct = Math.min(100, Math.round((credits.used / credits.limit) * 100));
+  const pct = credits.limit > 0 ? Math.min(100, Math.round((credits.used / credits.limit) * 100)) : 0;
   const monthlyRemaining = Math.max(0, credits.limit - credits.used);
   const totalAvailable = monthlyRemaining + extraCredits;
   const isLow = !unlimited && totalAvailable <= credits.limit * 0.1;

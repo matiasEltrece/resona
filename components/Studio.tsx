@@ -539,7 +539,7 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
     // ── Demo anónimo: clonar requiere login; tope de generaciones ──────────
     if (!isAuthed) {
       if (tab === "clone") {
-        window.location.href = "/auth/login?next=" + encodeURIComponent("/#studio");
+        window.location.href = "/auth/login?next=" + encodeURIComponent("/studio");
         return;
       }
       if (anonGens >= ANON_MAX_GENS) {
@@ -824,7 +824,7 @@ export default function Studio({ isAuthed = false }: { isAuthed?: boolean }) {
         <div className="space-y-4 flex flex-col">
           {anonLimitReached ? (
             <a
-              href="/auth/login?next=%2F%23studio"
+              href="/auth/login?next=%2Fstudio"
               className="btn-accent rounded-2xl py-5 text-lg font-semibold w-full text-center"
             >
               Registrate gratis para seguir ✦

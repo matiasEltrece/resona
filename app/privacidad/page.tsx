@@ -7,14 +7,14 @@ export default function PrivacidadPage() {
   return (
     <main className="max-w-3xl mx-auto px-4 py-16 space-y-6">
       <Link href="/" className="text-sm text-muted hover:text-white">← Volver</Link>
-      <h1 className="text-3xl font-bold gradient-text">Política de privacidad</h1>
+      <h1 className="text-3xl font-bold text-gradient">Política de privacidad</h1>
       <p className="text-xs text-muted">Última actualización: junio 2026</p>
 
       <div className="space-y-6 text-sm text-white/70 leading-relaxed">
         <section>
           <h2 className="text-white font-semibold mb-2">1. Qué datos recopilamos</h2>
           <ul className="list-disc list-inside space-y-1">
-            <li><strong className="text-white/90">Cuenta:</strong> tu email (para login por magic link).</li>
+            <li><strong className="text-white/90">Cuenta:</strong> tu email y contraseña (la contraseña se guarda cifrada).</li>
             <li><strong className="text-white/90">Uso:</strong> cantidad de generaciones, idioma y metadatos técnicos (no el texto completo).</li>
             <li><strong className="text-white/90">Voces guardadas:</strong> los audios de referencia que subís a "Mis voces", solo accesibles por vos.</li>
           </ul>
