@@ -225,7 +225,7 @@ function VoiceGallery({ design, setDesign }: { design: VoiceDesign; setDesign: (
   };
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 gap-2">
       {GALLERY_VOICES.map((v) => {
         const selected = JSON.stringify(design) === JSON.stringify(v.design);
         return (
@@ -646,55 +646,9 @@ export default function Studio() {
         ))}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-5">
-        {/* ── Panel izquierdo ── */}
-        <div className="space-y-4">
-          {/* Texto */}
-          <div className="glass rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-muted uppercase tracking-widest">Texto</p>
-              <span className="text-xs text-muted">{text.length}/{maxChars}</span>
-            </div>
-            <textarea
-              ref={textRef}
-              value={text}
-              onChange={(e) => setText(e.target.value.slice(0, maxChars))}
-              rows={4}
-              placeholder="Escribí o pegá el texto que querés generar..."
-              className="w-full bg-transparent resize-none outline-none text-sm leading-relaxed placeholder:text-muted/50"
-            />
-
-            {/* Toolbar de tags expresivos */}
-            <div className="mt-2 pt-2 border-t border-border">
-              <p className="text-[10px] text-muted uppercase tracking-widest mb-1.5">Efectos expresivos</p>
-              <div className="flex flex-wrap gap-1.5">
-                {EXPRESSIVE_TAGS.map((t) => (
-                  <button
-                    key={t.tag}
-                    onClick={() => insertTag(t.tag)}
-                    title={`Insertar ${t.tag}`}
-                    className="text-xs px-2 py-1 glass glass-hover rounded-lg text-muted hover:text-white"
-                  >
-                    {t.emoji} {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Scripts de ejemplo */}
-            <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border">
-              {SAMPLE_SCRIPTS.map((s, i) => (
-                <button
-                  key={i}
-                  onClick={() => setText(s)}
-                  className="text-xs px-2 py-1 glass glass-hover rounded-lg text-muted"
-                >
-                  Ejemplo {i + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-
+      <div className="kp-studio-grid">
+        {/* ── Columna A · Voz e idioma ── */}
+        <div className="space-y-4 min-w-0">
           {/* Idioma */}
           <div className="glass rounded-xl p-4 space-y-2 relative z-30">
             <p className="text-xs text-muted uppercase tracking-widest">Idioma <span className="opacity-50">· 646 disponibles</span></p>
@@ -785,7 +739,57 @@ export default function Studio() {
             )}
           </div>
 
-          {/* Ajustes de generación (colapsado por defecto) */}
+        </div>
+
+        {/* ── Columna B · Texto y ajustes ── */}
+        <div className="space-y-4 min-w-0">
+          {/* Texto */}
+          <div className="glass rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted uppercase tracking-widest">Texto</p>
+              <span className="text-xs text-muted">{text.length}/{maxChars}</span>
+            </div>
+            <textarea
+              ref={textRef}
+              value={text}
+              onChange={(e) => setText(e.target.value.slice(0, maxChars))}
+              rows={6}
+              placeholder="Escribí o pegá el texto que querés generar..."
+              className="w-full bg-transparent resize-none outline-none text-sm leading-relaxed placeholder:text-muted/50"
+            />
+
+            {/* Toolbar de tags expresivos */}
+            <div className="mt-2 pt-2 border-t border-border">
+              <p className="text-[10px] text-muted uppercase tracking-widest mb-1.5">Efectos expresivos</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EXPRESSIVE_TAGS.map((t) => (
+                  <button
+                    key={t.tag}
+                    onClick={() => insertTag(t.tag)}
+                    title={`Insertar ${t.tag}`}
+                    className="text-xs px-2 py-1 glass glass-hover rounded-lg text-muted hover:text-white"
+                  >
+                    {t.emoji} {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Scripts de ejemplo */}
+            <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border">
+              {SAMPLE_SCRIPTS.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => setText(s)}
+                  className="text-xs px-2 py-1 glass glass-hover rounded-lg text-muted"
+                >
+                  Ejemplo {i + 1}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Ajustes de generación (colapsado) */}
           <details className="glass rounded-xl p-4 group">
             <summary className="text-xs text-muted uppercase tracking-widest cursor-pointer select-none flex items-center">
               <span>Ajustes</span>
@@ -833,7 +837,7 @@ export default function Studio() {
           </details>
         </div>
 
-        {/* ── Panel derecho ── */}
+        {/* ── Columna C · Generar y salida ── */}
         <div className="space-y-3">
           <button
             onClick={generate}

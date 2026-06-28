@@ -285,6 +285,11 @@ input[type="range"].seek-bar::-webkit-slider-thumb:hover { transform: scale(1.25
 .kyma-premium .swagger-ui .highlight-code, .kyma-premium .swagger-ui .microlight { background:#0b0a14; border-radius:10px; font-family:var(--font-mono); }
 .kyma-premium .swagger-ui table tbody tr td { border-color:var(--c-border); }
 
+/* Studio · layout de 3 paneles (voz | texto | salida) */
+.kp-studio-grid { display:grid; grid-template-columns:300px minmax(0,1fr) 326px; gap:16px; align-items:start; }
+@media(max-width:1180px){ .kp-studio-grid{ grid-template-columns:280px minmax(0,1fr); } .kp-studio-grid > :last-child{ grid-column:1 / -1; } }
+@media(max-width:760px){ .kp-studio-grid{ grid-template-columns:1fr; } .kp-studio-grid > :last-child{ grid-column:auto; } }
+
 /* Sliders (seek-bar) legibles en claro: track + thumb dorado */
 .kyma-premium input[type="range"].seek-bar { background:var(--c-track); }
 .kyma-premium input[type="range"].seek-bar::-webkit-slider-thumb { background:var(--accent-solid); box-shadow:0 0 6px var(--accent-glow); }
