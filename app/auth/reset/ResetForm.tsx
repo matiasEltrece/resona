@@ -26,17 +26,17 @@ export default function ResetForm() {
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-1.5">
-        <label htmlFor="new-password" className="text-xs text-muted uppercase tracking-widest">Nueva contraseña</label>
+        <label htmlFor="new-password" className="text-xs uppercase tracking-widest" style={{ color: "var(--c-text-3)" }}>Nueva contraseña</label>
         <input
           id="new-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••" required minLength={6} autoFocus autoComplete="new-password"
-          className="w-full glass rounded-xl px-4 py-3 text-sm outline-none focus:ring-accent placeholder:text-muted/40 transition-all"
+          className="kp-field"
         />
       </div>
       {error && <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
       <button
         type="submit" disabled={state === "loading" || !password}
-        className="btn-accent w-full py-3 rounded-xl text-sm font-semibold"
+        className="kp-submit"
       >
         {state === "loading" ? "Guardando…" : "Guardar y entrar"}
       </button>

@@ -117,18 +117,17 @@ export default function LoginForm({
       {mode === "reset" ? (
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Recuperar contraseña</h2>
-          <button type="button" onClick={() => { setMode("signin"); setError(""); setInfo(""); }} className="text-xs text-muted hover:text-white transition-colors">← Volver</button>
+          <button type="button" onClick={() => { setMode("signin"); setError(""); setInfo(""); }} className="text-xs transition-opacity hover:opacity-60" style={{ color: "var(--c-text-3)" }}>← Volver</button>
         </div>
       ) : (
-        <div className="flex gap-1 p-1 glass rounded-xl text-sm">
+        <div className="kp-tabs">
           {(["signin", "signup"] as const).map((m) => (
             <button
               key={m}
               type="button"
+              data-active={mode === m}
               onClick={() => { setMode(m); setError(""); setInfo(""); }}
-              className={`flex-1 py-2 rounded-lg font-medium transition-all ${
-                mode === m ? "bg-white/10 text-white ring-accent" : "text-muted hover:text-white"
-              }`}
+              className="kp-tab"
             >
               {m === "signin" ? "Ingresar" : "Crear cuenta"}
             </button>
@@ -137,27 +136,27 @@ export default function LoginForm({
       )}
 
       <div className="space-y-1.5">
-        <label htmlFor="email" className="text-xs text-muted uppercase tracking-widest">Email</label>
+        <label htmlFor="email" className="text-xs uppercase tracking-widest" style={{ color: "var(--c-text-3)" }}>Email</label>
         <input
           id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
           placeholder="vos@ejemplo.com" required autoFocus autoComplete="email"
-          className="w-full glass rounded-xl px-4 py-3 text-sm outline-none focus:ring-accent placeholder:text-muted/40 transition-all"
+          className="kp-field"
         />
       </div>
 
       {mode !== "reset" && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-xs text-muted uppercase tracking-widest">Contraseña</label>
+            <label htmlFor="password" className="text-xs uppercase tracking-widest" style={{ color: "var(--c-text-3)" }}>Contraseña</label>
             {mode === "signin" && (
-              <button type="button" onClick={() => { setMode("reset"); setError(""); setInfo(""); }} className="text-xs text-muted hover:text-white transition-colors">¿La olvidaste?</button>
+              <button type="button" onClick={() => { setMode("reset"); setError(""); setInfo(""); }} className="text-xs transition-opacity hover:opacity-60" style={{ color: "var(--c-text-3)" }}>¿La olvidaste?</button>
             )}
           </div>
           <input
             id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••" required minLength={6}
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            className="w-full glass rounded-xl px-4 py-3 text-sm outline-none focus:ring-accent placeholder:text-muted/40 transition-all"
+            className="kp-field"
           />
         </div>
       )}
@@ -176,7 +175,7 @@ export default function LoginForm({
 
       <button
         type="submit" disabled={state === "loading" || !email.trim() || (mode !== "reset" && !password) || (mode === "signup" && !!TURNSTILE_SITE_KEY && !captchaToken)}
-        className="btn-accent w-full py-3 rounded-xl text-sm font-semibold"
+        className="kp-submit"
       >
         {state === "loading" ? (
           <span className="flex items-center justify-center gap-2">
