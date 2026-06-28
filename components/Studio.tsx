@@ -74,7 +74,7 @@ function RealWave({ src, progress }: { src: string; progress: number }) {
               flex: 1,
               height: `${Math.max(8, h * 100)}%`,
               borderRadius: 2,
-              background: played ? "var(--brand-gradient-vert)" : "rgba(255,255,255,0.16)",
+              background: played ? "var(--brand-gradient-vert)" : "var(--c-track)",
               transition: "background 0.1s ease",
             }}
           />
@@ -151,7 +151,7 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
       <input
         type="range" min="0" max="100" value={progress} onChange={seek}
         className="seek-bar w-full"
-        style={{ background: `linear-gradient(to right, var(--accent-from) ${progress}%, rgba(255,255,255,0.12) ${progress}%)` }}
+        style={{ background: `linear-gradient(to right, var(--accent-from) ${progress}%, var(--c-track) ${progress}%)` }}
       />
 
       <div className="flex items-center justify-between text-xs text-muted">
@@ -583,7 +583,7 @@ export default function Studio() {
   }, [text, lang, tab, design, refAudio, refText, selectedVoiceId, speed, quality, genState, cloneConsent]);
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-8 space-y-6">
+    <div className="w-full max-w-6xl mx-auto px-4 py-8 space-y-6">
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 p-1 glass rounded-xl w-fit">
@@ -753,7 +753,7 @@ export default function Studio() {
                 type="range" min="0.5" max="2" step="0.05" value={speed}
                 onChange={(e) => setSpeed(parseFloat(e.target.value))}
                 className="seek-bar w-full"
-                style={{ background: `linear-gradient(to right, var(--accent-from) ${((speed - 0.5) / 1.5) * 100}%, rgba(255,255,255,0.12) ${((speed - 0.5) / 1.5) * 100}%)` }}
+                style={{ background: `linear-gradient(to right, var(--accent-from) ${((speed - 0.5) / 1.5) * 100}%, var(--c-track) ${((speed - 0.5) / 1.5) * 100}%)` }}
               />
               <div className="flex justify-between text-[10px] text-muted mt-0.5">
                 <span>Lento</span><span>Normal</span><span>Rápido</span>
@@ -787,7 +787,7 @@ export default function Studio() {
           <button
             onClick={generate}
             disabled={genState === "loading" || !text.trim()}
-            className={`btn-accent rounded-2xl py-5 text-lg font-semibold w-full ${genState === "loading" ? "pulse-ring" : ""}`}
+            className={`btn-accent rounded-2xl py-4 text-base font-semibold w-full ${genState === "loading" ? "pulse-ring" : ""}`}
           >
             {genState === "loading" ? (
               <span className="flex items-center justify-center gap-3">

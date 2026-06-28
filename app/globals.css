@@ -215,6 +215,7 @@ input[type="range"].seek-bar::-webkit-slider-thumb:hover { transform: scale(1.25
   --brand-violet: var(--accent-solid); --brand-magenta: var(--accent-solid); --brand-cyan: var(--accent-solid);
   --brand-gradient: var(--accent-grad); --brand-gradient-2: var(--accent-grad); --brand-gradient-vert: var(--accent-grad);
   --accent: var(--accent-solid);
+  --accent-from: var(--accent-solid); --accent-via: var(--gold-2); --accent-to: var(--gold-1);
   --shadow-accent: var(--c-shadow-soft); --shadow-card: var(--c-shadow);
   --glow-violet: var(--accent-glow); --glow-magenta: var(--accent-glow); --glow-cyan: var(--accent-glow);
 }
@@ -280,3 +281,8 @@ input[type="range"].seek-bar::-webkit-slider-thumb:hover { transform: scale(1.25
 .kyma-premium .swagger-ui .model-title, .kyma-premium .swagger-ui .model { color:var(--c-text); }
 .kyma-premium .swagger-ui .highlight-code, .kyma-premium .swagger-ui .microlight { background:#0b0a14; border-radius:10px; font-family:var(--font-mono); }
 .kyma-premium .swagger-ui table tbody tr td { border-color:var(--c-border); }
+
+/* Sliders (seek-bar) legibles en claro: track + thumb dorado */
+.kyma-premium input[type="range"].seek-bar { background:var(--c-track); }
+.kyma-premium input[type="range"].seek-bar::-webkit-slider-thumb { background:var(--accent-solid); box-shadow:0 0 6px var(--accent-glow); }
+.kyma-premium input[type="range"].seek-bar::-moz-range-thumb { background:var(--accent-solid); border:none; }

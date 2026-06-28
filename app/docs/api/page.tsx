@@ -2,16 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/* Referencia interactiva: Swagger UI (bundle CDN) apuntando a /api/openapi,
-   reskineado en dorado por las reglas .kyma-premium .swagger-ui de globals.css. */
+/* Referencia interactiva: Swagger UI (self-hosted en /public/vendor/swagger,
+   versión fijada 5.17.14) apuntando a /api/openapi, reskineado en dorado por
+   las reglas .kyma-premium .swagger-ui de globals.css. */
 
 declare global {
   interface Window {
     SwaggerUIBundle?: { (opts: Record<string, unknown>): void; presets: { apis: unknown } };
   }
 }
-
-const SW = "5.17.14";
 
 export default function ApiPlayground() {
   const started = useRef(false);
@@ -23,7 +22,7 @@ export default function ApiPlayground() {
 
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = `https://unpkg.com/swagger-ui-dist@${SW}/swagger-ui.css`;
+    css.href = "/vendor/swagger/swagger-ui.css";
     document.head.appendChild(css);
 
     const init = () => {
@@ -41,8 +40,7 @@ export default function ApiPlayground() {
     };
 
     const script = document.createElement("script");
-    script.src = `https://unpkg.com/swagger-ui-dist@${SW}/swagger-ui-bundle.js`;
-    script.crossOrigin = "anonymous";
+    script.src = "/vendor/swagger/swagger-ui-bundle.js";
     script.onload = init;
     script.onerror = () => setState("error");
     document.body.appendChild(script);
