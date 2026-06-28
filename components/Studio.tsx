@@ -182,6 +182,16 @@ const GALLERY_VOICES: { name: string; char: string; flag: string; src: string; d
   { name: "Dante",  char: "Masculina · profunda", flag: "🇮🇹", src: "/radio/dante.wav",  design: { gender: "male",   age: "elderly",     pitch: "very_low" } },
 ];
 
+const AGE_ES: Record<string, string> = { child: "Niño", teenager: "Adolescente", young_adult: "Joven", middle_aged: "Mediana", elderly: "Mayor" };
+const PITCH_ES: Record<string, string> = { very_low: "Muy grave", low: "Grave", moderate: "Medio", high: "Agudo", very_high: "Muy agudo" };
+function designSummary(d: VoiceDesign): string {
+  const parts = [d.gender === "female" ? "Femenina" : "Masculina", AGE_ES[d.age] ?? d.age, PITCH_ES[d.pitch] ?? d.pitch];
+  if (d.whisper) parts.push("Susurro");
+  if (d.accent) parts.push(d.accent);
+  if (d.dialect) parts.push(d.dialect);
+  return parts.join(" · ");
+}
+
 function VoiceGallery({ design, setDesign }: { design: VoiceDesign; setDesign: (d: VoiceDesign) => void }) {
   const [playing, setPlaying] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -250,12 +260,18 @@ const RECIPES: { label: string; design: VoiceDesign }[] = [
 ];
 
 function VoiceGuide({ onRecipe }: { onRecipe: (d: VoiceDesign) => void }) {
+  const [applied, setApplied] = useState<string | null>(null);
+  const apply = (label: string, d: VoiceDesign) => {
+    onRecipe(d);
+    setApplied(label);
+    window.setTimeout(() => setApplied((a) => (a === label ? null : a)), 2600);
+  };
   return (
-    <div className="glass rounded-xl p-4 space-y-3 text-xs">
+    <div className="glass rounded-xl p-4 space-y-3 text-xs max-h-[460px] overflow-y-auto">
       <p className="text-xs text-muted uppercase tracking-widest">Guía · qué voces podés crear</p>
       <p className="text-muted leading-relaxed">
         No hay una lista cerrada: <span className="text-gradient font-semibold">diseñás</span> la voz combinando
-        atributos, o <span className="font-semibold" style={{ color: "var(--accent-solid)" }}>clonás</span> una con 10s de audio.
+        atributos, o <span className="font-semibold" style={{ color: "var(--accent-solid)" }}>clonás</span> una con 10s de audio (se transcribe sola).
       </p>
       <div className="space-y-1.5">
         <GuideRow label="Género" items="Femenina · Masculina" />
@@ -267,21 +283,45 @@ function VoiceGuide({ onRecipe }: { onRecipe: (d: VoiceDesign) => void }) {
         + acentos del inglés (10) · dialectos del chino (12) · <strong className="text-white/80">646 idiomas</strong>.
         Son <strong className="text-white/80">1000+ combinaciones</strong> — y la clonación es infinita.
       </p>
+
       <div>
         <p className="text-[10px] text-muted uppercase tracking-widest mb-1.5">Recetas rápidas (tocá para aplicar)</p>
         <div className="flex flex-wrap gap-1.5">
           {RECIPES.map((r) => (
             <button
               key={r.label}
-              onClick={() => onRecipe(r.design)}
+              onClick={() => apply(r.label, r.design)}
               className="text-[11px] px-2 py-1 glass glass-hover rounded-lg text-muted hover:text-white"
             >
               {r.label}
             </button>
           ))}
         </div>
+        {applied && (
+          <p className="text-[11px] mt-1.5" style={{ color: "var(--accent-solid)" }}>
+            ✓ «{applied}» aplicada — mirá «Voz actual» a la izquierda y generá.
+          </p>
+        )}
       </div>
-      <p className="text-[11px] text-muted">💡 Insertá efectos como <code>[laughter]</code> o <code>[sigh]</code> con los botones del texto.</p>
+
+      <div>
+        <p className="text-[10px] text-muted uppercase tracking-widest mb-1.5">Efectos que funcionan (documentados)</p>
+        <div className="flex flex-wrap gap-1">
+          {EXPRESSIVE_TAGS.map((t) => (
+            <code key={t.tag} className="text-[10px] px-1.5 py-0.5 rounded-md glass text-muted">{t.tag}</code>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted mt-1.5">Escribilos en el texto o usá los botones. Otros tags no garantizan resultado.</p>
+      </div>
+
+      <div>
+        <p className="text-[10px] text-muted uppercase tracking-widest mb-1.5">Cómo escribir</p>
+        <ul className="space-y-0.5 list-disc list-inside text-muted leading-relaxed">
+          <li>Puntuación natural (¿? ¡! , .) guía la entonación.</li>
+          <li>Acentos del inglés: poné el idioma en English para habilitarlos.</li>
+          <li>Para clonar: 10-30s de audio limpio, sin música de fondo.</li>
+        </ul>
+      </div>
     </div>
   );
 }
@@ -298,6 +338,12 @@ function DesignPanel({
 
   return (
     <div className="space-y-4">
+      {/* Voz actual (refleja recetas y ajustes aplicados) */}
+      <div className="flex items-center gap-2 flex-wrap pb-2 border-b border-border">
+        <span className="text-[10px] text-muted uppercase tracking-widest">Voz actual</span>
+        <span className="text-sm font-semibold text-gradient">{designSummary(design)}</span>
+      </div>
+
       {/* Galería de voces con preview */}
       <div>
         <p className="text-xs text-muted mb-2 uppercase tracking-widest">Voces · tocá ▶ para escuchar</p>
@@ -556,6 +602,7 @@ export default function Studio() {
   const [refText, setRefText] = useState("");
   const [speed, setSpeed] = useState(1);
   const [quality, setQuality] = useState<Quality>("balanced");
+  const [seed, setSeed] = useState("");
   const [genState, setGenState] = useState<GenState>("idle");
   const [result, setResult] = useState<AudioResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -627,6 +674,7 @@ export default function Studio() {
       consent: usingClone ? true : undefined,
       speed,
       quality,
+      seed: seed.trim() && !Number.isNaN(Number(seed)) ? Number(seed) : undefined,
     };
 
     try {
@@ -670,7 +718,19 @@ export default function Studio() {
               tab === t ? "bg-white/10 text-white ring-accent" : "text-muted hover:text-white"
             }`}
           >
-            {t === "design" ? "🎨 Diseñar voz" : "🎙 Clonar voz"}
+            <span className="inline-flex items-center gap-2">
+              {t === "design" ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="8.5" cy="8" r="3.2" /><path d="M3.5 19c0-3 2.2-4.8 5-4.8s5 1.8 5 4.8" />
+                  <path d="M16.5 7.5a4.5 4.5 0 0 1 0 9" /><path d="M19.5 5a8 8 0 0 1 0 14" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0" /><path d="M12 18v3" />
+                </svg>
+              )}
+              {t === "design" ? "Diseñar voz" : "Clonar voz"}
+            </span>
           </button>
         ))}
       </div>
@@ -898,6 +958,19 @@ export default function Studio() {
                 ))}
               </div>
             </div>
+
+            {/* Semilla (reproducibilidad) */}
+            <div>
+              <div className="flex justify-between text-xs mb-1.5">
+                <span className="text-muted">Semilla <span className="opacity-50">(opcional)</span></span>
+                {seed && <button onClick={() => setSeed("")} className="text-muted hover:text-white">limpiar</button>}
+              </div>
+              <input
+                type="number" value={seed} onChange={(e) => setSeed(e.target.value)}
+                placeholder="Aleatoria — fijá un número para repetir la misma voz"
+                className="w-full glass rounded-xl px-3 py-2 text-sm bg-transparent outline-none placeholder:text-muted/50"
+              />
+            </div>
             </div>
           </details>
         </div>
@@ -924,19 +997,6 @@ export default function Studio() {
               "✦ Generar voz"
             )}
           </button>
-
-          <div className="grid grid-cols-3 gap-2 text-center">
-            {[
-              { label: "Idiomas", value: "646" },
-              { label: "RTF", value: "0.025" },
-              { label: "Latencia", value: "<1s" },
-            ].map((s) => (
-              <div key={s.label} className="glass rounded-xl p-2.5">
-                <p className="text-lg font-bold text-gradient">{s.value}</p>
-                <p className="text-xs text-muted mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </div>
 
           {/* Guía de voces */}
           <VoiceGuide onRecipe={(d) => { setTab("design"); setDesign(d); }} />
