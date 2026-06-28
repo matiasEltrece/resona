@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
-  LANGUAGES, VOICE_PRESETS, SAMPLE_SCRIPTS,
+  LANGUAGES, SAMPLE_SCRIPTS,
   GENDER_OPTIONS, AGE_OPTIONS, PITCH_OPTIONS, ACCENT_OPTIONS, DIALECT_OPTIONS,
   EXPRESSIVE_TAGS, QUALITY_OPTIONS, isEnglish, isChinese,
 } from "@/lib/catalog";
@@ -198,6 +198,65 @@ function Pills<T extends string>({
   );
 }
 
+/* Galería de voces con preview de audio (las 6 de la home). Tocar ▶ escucha el
+   sample; tocar la tarjeta aplica el diseño de esa voz. */
+const GALLERY_VOICES: { name: string; char: string; flag: string; src: string; design: VoiceDesign }[] = [
+  { name: "Aurora", char: "Femenina · cálida",   flag: "🇦🇷", src: "/radio/aurora.wav", design: { gender: "female", age: "young_adult", pitch: "moderate" } },
+  { name: "Atlas",  char: "Masculina · grave",   flag: "🇬🇧", src: "/radio/atlas.wav",  design: { gender: "male",   age: "middle_aged", pitch: "low" } },
+  { name: "Nova",   char: "Femenina · enérgica", flag: "🇧🇷", src: "/radio/nova.wav",   design: { gender: "female", age: "young_adult", pitch: "high" } },
+  { name: "Sora",   char: "Femenina · suave",    flag: "🇯🇵", src: "/radio/sora.wav",   design: { gender: "female", age: "teenager",    pitch: "moderate" } },
+  { name: "Echo",   char: "Femenina · susurro",  flag: "🇪🇸", src: "/radio/echo.wav",   design: { gender: "female", age: "young_adult", pitch: "low" } },
+  { name: "Leo",    char: "Masculina · narrador",flag: "🇮🇹", src: "/radio/leo.wav",    design: { gender: "male",   age: "elderly",     pitch: "low" } },
+];
+
+function VoiceGallery({ design, setDesign }: { design: VoiceDesign; setDesign: (d: VoiceDesign) => void }) {
+  const [playing, setPlaying] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => () => { audioRef.current?.pause(); }, []);
+
+  const preview = (e: React.MouseEvent, v: (typeof GALLERY_VOICES)[number]) => {
+    e.stopPropagation();
+    if (!audioRef.current) audioRef.current = new Audio();
+    const a = audioRef.current;
+    if (playing === v.name) { a.pause(); setPlaying(null); return; }
+    a.src = v.src; a.currentTime = 0; a.play().catch(() => {});
+    a.onended = () => setPlaying(null);
+    setPlaying(v.name);
+  };
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {GALLERY_VOICES.map((v) => {
+        const selected = JSON.stringify(design) === JSON.stringify(v.design);
+        return (
+          <div
+            key={v.name}
+            onClick={() => setDesign(v.design)}
+            className={`flex items-center gap-2.5 glass glass-hover rounded-xl p-2.5 cursor-pointer transition-all ${selected ? "ring-accent" : ""}`}
+          >
+            <button
+              onClick={(e) => preview(e, v)}
+              aria-label={playing === v.name ? `Pausar ${v.name}` : `Escuchar ${v.name}`}
+              className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
+              style={{ background: "var(--accent-soft)", color: "var(--accent-solid)" }}
+            >
+              {playing === v.name ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20" /></svg>
+              )}
+            </button>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold truncate">{v.flag} {v.name}</p>
+              <p className="text-xs text-muted truncate">{v.char}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function DesignPanel({
   design, setDesign, lang,
 }: {
@@ -210,27 +269,14 @@ function DesignPanel({
 
   return (
     <div className="space-y-4">
-      {/* Presets */}
+      {/* Galería de voces con preview */}
       <div>
-        <p className="text-xs text-muted mb-2 uppercase tracking-widest">Presets</p>
-        <div className="grid grid-cols-2 gap-2">
-          {VOICE_PRESETS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setDesign(p.design)}
-              className={`glass glass-hover rounded-xl p-3 text-left transition-all ${
-                JSON.stringify(design) === JSON.stringify(p.design) ? "ring-accent" : ""
-              }`}
-            >
-              <p className="font-semibold text-sm">{p.name}</p>
-              <p className="text-xs text-muted mt-0.5">{p.desc}</p>
-            </button>
-          ))}
-        </div>
+        <p className="text-xs text-muted mb-2 uppercase tracking-widest">Voces · tocá ▶ para escuchar</p>
+        <VoiceGallery design={design} setDesign={setDesign} />
       </div>
 
-      {/* Controles avanzados */}
-      <details className="group" open>
+      {/* Controles avanzados (colapsado por defecto) */}
+      <details className="group">
         <summary className="text-xs text-muted uppercase tracking-widest cursor-pointer select-none flex items-center gap-2">
           <span>Ajuste fino</span>
           <span className="group-open:rotate-180 transition-transform">›</span>
@@ -739,9 +785,13 @@ export default function Studio() {
             )}
           </div>
 
-          {/* Ajustes de generación */}
-          <div className="glass rounded-2xl p-4 space-y-4">
-            <p className="text-xs text-muted uppercase tracking-widest">Ajustes</p>
+          {/* Ajustes de generación (colapsado por defecto) */}
+          <details className="glass rounded-2xl p-4 group">
+            <summary className="text-xs text-muted uppercase tracking-widest cursor-pointer select-none flex items-center">
+              <span>Ajustes</span>
+              <span className="ml-auto group-open:rotate-180 transition-transform">›</span>
+            </summary>
+            <div className="space-y-4 mt-3">
 
             {/* Velocidad */}
             <div>
@@ -779,7 +829,8 @@ export default function Studio() {
                 ))}
               </div>
             </div>
-          </div>
+            </div>
+          </details>
         </div>
 
         {/* ── Panel derecho ── */}
