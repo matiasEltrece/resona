@@ -245,7 +245,8 @@ export default function LandingPremium({
 
   return (
     <div className="kyma-premium" data-theme={dark ? "dark" : undefined}
-      style={{ position: "relative", minHeight: "100vh", overflow: "hidden", background: "var(--c-page)", color: "var(--c-text)", fontFamily: "var(--font-body)" }}>
+      style={{ position: "relative", minHeight: "100vh", overflow: "hidden", isolation: "isolate", background: "var(--c-page)", color: "var(--c-text)", fontFamily: "var(--font-body)" }}>
+      <div style={{ position: "fixed", inset: 0, background: "var(--c-page)", zIndex: -1 }} aria-hidden />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Space+Grotesk:wght@400..600&display=swap');
         .kyma-premium{

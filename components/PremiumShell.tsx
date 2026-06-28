@@ -12,7 +12,8 @@ export default function PremiumShell({ children }: { children: React.ReactNode }
   const sBtn: React.CSSProperties = { background: "var(--c-btn)", color: "var(--c-btn-text)", border: "1px solid transparent", borderRadius: 12, fontWeight: 600, padding: "10px 18px", fontSize: 14, textDecoration: "none", display: "inline-flex", alignItems: "center" };
 
   return (
-    <div className="kyma-premium" data-theme={dark ? "dark" : undefined} style={{ minHeight: "100vh", background: "var(--c-page)", color: "var(--c-text)", fontFamily: "var(--font-body)" }}>
+    <div className="kyma-premium" data-theme={dark ? "dark" : undefined} style={{ position: "relative", minHeight: "100vh", isolation: "isolate", background: "var(--c-page)", color: "var(--c-text)", fontFamily: "var(--font-body)" }}>
+      <div style={{ position: "fixed", inset: 0, background: "var(--c-page)", zIndex: -1 }} aria-hidden />
       <nav style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--c-page)", borderBottom: "1px solid var(--c-border)" }}>
         <div style={{ maxWidth: 1240, margin: "0 auto", height: 72, padding: "0 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <a href="/" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", color: "var(--c-text)" }}>
