@@ -439,8 +439,9 @@ export default function LandingPremium({
         <div className="kp-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 18 }}>
           {FEATURES.map((f) => (
             <div key={f.t} className="kp-card-h" style={{ ...card, padding: 24 }}>
-              <div style={{ width: 46, height: 46, borderRadius: 13, background: "var(--accent-grad)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, boxShadow: "0 8px 18px -10px var(--accent-glow)" }}>
+              <div style={{ marginBottom: 16 }}>
                 <Icon name={f.i} />
+                <span style={{ display: "block", width: 18, height: 2, borderRadius: 99, background: "var(--accent-grad)", marginTop: 8 }} />
               </div>
               <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>{f.t}</h3>
               <p style={{ fontSize: 14, color: "var(--c-text-2)", lineHeight: 1.55 }}>{f.d}</p>
@@ -543,14 +544,14 @@ export default function LandingPremium({
 }
 
 function Icon({ name }: { name: string }) {
-  const p = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "#fff", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  const p = { width: 26, height: 26, viewBox: "0 0 24 24", fill: "none", stroke: "var(--c-text)", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   switch (name) {
-    case "mic": return <svg {...p}><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" /><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4" /></svg>;
+    case "mic": return <svg {...p}><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" /><path d="M19 10v1a7 7 0 0 1-14 0v-1" /><line x1="12" y1="18" x2="12" y2="22" /></svg>;
     case "sliders": return <svg {...p}><line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" /><line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" /><line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" /><line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" /></svg>;
-    case "time": return <svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>;
-    case "globe": return <svg {...p}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z" /></svg>;
-    case "code": return <svg {...p}><path d="M16 18l6-6-6-6M8 6l-6 6 6 6" /></svg>;
-    case "metrics": return <svg {...p}><path d="M3 3v18h18" /><path d="M7 14l3-4 3 3 4-6" /></svg>;
+    case "time": return <svg {...p}><path d="M3.34 19a10 10 0 1 1 17.32 0" /><path d="m12 14 4.5-4.5" /><circle cx="12" cy="14" r="1.4" fill="var(--c-text)" stroke="none" /></svg>;
+    case "globe": return <svg {...p}><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>;
+    case "code": return <svg {...p}><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>;
+    case "metrics": return <svg {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>;
     default: return null;
   }
 }

@@ -142,3 +142,48 @@ body {
 input[type="range"].seek-bar { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.12); border-radius: 4px; outline: none; cursor: pointer; }
 input[type="range"].seek-bar::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: white; cursor: pointer; box-shadow: 0 0 6px var(--brand-violet); transition: transform 0.1s; }
 input[type="range"].seek-bar::-webkit-slider-thumb:hover { transform: scale(1.25); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KYMA · TEMA PREMIUM (dorado/claro + dark) — landing y páginas de contenido.
+   Scoped a .kyma-premium para no afectar el dashboard/studio (tema oscuro).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.kyma-premium {
+  --gold-1:#ecd49a; --gold-2:#c79a45; --gold-3:#a87f33;
+  --accent-grad:linear-gradient(115deg,var(--gold-1),var(--gold-2));
+  --accent-solid:#bd8f3d; --accent-glow:rgba(199,154,69,0.45); --accent-soft:rgba(199,154,69,0.12);
+  --c-page:#f1f1f3; --c-surface:#ffffff; --c-surface-2:#f6f6f8;
+  --c-border:rgba(18,17,24,0.09); --c-border-2:rgba(18,17,24,0.15);
+  --c-text:#131218; --c-text-2:#605e6c; --c-text-3:#9b99a6;
+  --c-btn:#15141a; --c-btn-text:#ffffff; --c-btn-2-bg:#ffffff;
+  --c-track:rgba(18,17,24,0.08);
+  --c-shadow:0 1px 2px rgba(18,17,24,0.05),0 24px 48px -28px rgba(18,17,24,0.28);
+  --c-shadow-soft:0 1px 2px rgba(18,17,24,0.04),0 14px 34px -26px rgba(18,17,24,0.20);
+  --c-blueprint:rgba(18,17,24,0.10);
+  --font-head:var(--font-bricolage),system-ui,sans-serif;
+  --font-body:var(--font-space),system-ui,sans-serif;
+  --font-mono:var(--font-geist-mono),ui-monospace,monospace;
+  background:var(--c-page); color:var(--c-text); font-family:var(--font-body);
+}
+.kyma-premium[data-theme="dark"] {
+  --gold-1:#f0da9f; --gold-2:#d2a64f;
+  --accent-glow:rgba(210,166,79,0.5); --accent-soft:rgba(210,166,79,0.14);
+  --c-page:#070611; --c-surface:rgba(255,255,255,0.035); --c-surface-2:rgba(255,255,255,0.02);
+  --c-border:rgba(255,255,255,0.09); --c-border-2:rgba(255,255,255,0.16);
+  --c-text:#f5f3ff; --c-text-2:#a9a5bd; --c-text-3:#6f6b85;
+  --c-btn:#f5f3ff; --c-btn-text:#0b0916; --c-btn-2-bg:rgba(255,255,255,0.04);
+  --c-track:rgba(255,255,255,0.10);
+  --c-shadow:0 10px 40px -14px rgba(0,0,0,0.65);
+  --c-shadow-soft:0 10px 34px -18px rgba(0,0,0,0.55);
+  --c-blueprint:rgba(255,255,255,0.08);
+}
+.kyma-premium h1, .kyma-premium h2, .kyma-premium h3 { font-family:var(--font-head); margin:0; }
+.kyma-premium a.kp-nav { color:var(--c-text-2); text-decoration:none; font-size:14px; }
+.kyma-premium a.kp-nav:hover { color:var(--c-text); }
+.kyma-premium .kp-card-h { transition:transform .18s ease, box-shadow .18s ease; }
+.kyma-premium .kp-card-h:hover { transform:translateY(-2px); box-shadow:var(--c-shadow); }
+.kyma-premium .kp-row { transition:background .15s ease; }
+.kyma-premium .kp-row:hover { background:var(--c-surface-2); }
+.kyma-premium .kp-prose p { color:var(--c-text-2); line-height:1.7; margin:0 0 12px; }
+.kyma-premium .kp-prose li { color:var(--c-text-2); line-height:1.7; }
+.kyma-premium .kp-prose code { font-family:var(--font-mono); background:var(--c-surface-2); border:1px solid var(--c-border); border-radius:6px; padding:2px 6px; font-size:0.9em; }
+@media(max-width:980px){ .kyma-premium .kp-hero{grid-template-columns:1fr!important} .kyma-premium .kp-3{grid-template-columns:1fr!important} .kyma-premium .kp-4{grid-template-columns:repeat(2,1fr)!important} }
