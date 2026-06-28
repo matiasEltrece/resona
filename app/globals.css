@@ -197,3 +197,40 @@ input[type="range"].seek-bar::-webkit-slider-thumb:hover { transform: scale(1.25
 .kyma-premium .kp-tabs { display:flex; gap:4px; padding:4px; background:var(--c-surface-2); border:1px solid var(--c-border); border-radius:12px; }
 .kyma-premium .kp-tab { flex:1; padding:8px; border-radius:9px; font-weight:500; font-size:14px; border:none; background:transparent; color:var(--c-text-3); cursor:pointer; transition:all .15s; }
 .kyma-premium .kp-tab[data-active="true"] { background:var(--c-surface); color:var(--c-text); box-shadow:var(--c-shadow-soft); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPAT · remapea el sistema de tokens VIEJO (dashboard/studio) al tema premium.
+   Así esos componentes adoptan el dorado (claro/oscuro) sin reescribirlos.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.kyma-premium {
+  --text-primary: var(--c-text);
+  --text-secondary: var(--c-text-2);
+  --text-muted: var(--c-text-3);
+  --text-on-accent: #fff;
+  --bg-void: var(--c-page); --bg-base: var(--c-page);
+  --bg-panel: var(--c-surface); --bg-elevated: var(--c-surface-2);
+  --surface-page: var(--c-page); --surface-card: var(--c-surface);
+  --glass-fill: var(--c-surface); --glass-fill-hover: var(--c-surface-2); --glass-fill-active: var(--c-surface-2);
+  --glass-border: var(--c-border); --glass-border-hover: var(--c-border-2); --border-default: var(--c-border);
+  --brand-violet: var(--accent-solid); --brand-magenta: var(--accent-solid); --brand-cyan: var(--accent-solid);
+  --brand-gradient: var(--accent-grad); --brand-gradient-2: var(--accent-grad); --brand-gradient-vert: var(--accent-grad);
+  --accent: var(--accent-solid);
+  --shadow-accent: var(--c-shadow-soft); --shadow-card: var(--c-shadow);
+  --glow-violet: var(--accent-glow); --glow-magenta: var(--accent-glow); --glow-cyan: var(--accent-glow);
+}
+/* clases utilitarias viejas → premium */
+.kyma-premium .glass { background: var(--c-surface) !important; border: 1px solid var(--c-border) !important; box-shadow: var(--c-shadow-soft); -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.kyma-premium .glass-hover:hover { background: var(--c-surface-2) !important; border-color: var(--c-border-2) !important; }
+.kyma-premium .btn-accent { background: var(--c-btn) !important; color: var(--c-btn-text) !important; box-shadow: var(--c-shadow-soft) !important; }
+.kyma-premium .text-gradient { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* Tailwind blancos hardcodeados → tokens premium */
+.kyma-premium .text-white { color: var(--c-text) !important; }
+.kyma-premium .text-white\/90, .kyma-premium .text-white\/80 { color: var(--c-text) !important; }
+.kyma-premium .text-white\/70, .kyma-premium .text-white\/60, .kyma-premium .text-white\/50 { color: var(--c-text-2) !important; }
+.kyma-premium .text-white\/40, .kyma-premium .text-white\/30 { color: var(--c-text-3) !important; }
+.kyma-premium .bg-white\/5 { background: var(--c-surface-2) !important; }
+.kyma-premium .bg-white\/10 { background: var(--c-track) !important; }
+.kyma-premium .border-white\/10, .kyma-premium .border-white\/5, .kyma-premium .border-border, .kyma-premium .border-border\/50 { border-color: var(--c-border) !important; }
+.kyma-premium .hover\:text-white:hover { color: var(--c-text) !important; }
+/* aurora/grain del tema oscuro no se ven en premium */
+.kyma-premium .aurora-bg, .kyma-premium .grain::after { display: none; }
