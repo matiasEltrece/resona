@@ -216,6 +216,9 @@ input[type="range"].seek-bar::-webkit-slider-thumb:hover { transform: scale(1.25
   --brand-gradient: var(--accent-grad); --brand-gradient-2: var(--accent-grad); --brand-gradient-vert: var(--accent-grad);
   --accent: var(--accent-solid);
   --accent-from: var(--accent-solid); --accent-via: var(--gold-2); --accent-to: var(--gold-1);
+  /* tokens compuestos definidos en :root con el violeta horneado → redefinir enteros */
+  --ring-accent: 0 0 0 1px var(--accent-solid), 0 0 22px -8px var(--accent-glow);
+  --shadow-accent-hover: var(--c-shadow);
   --shadow-accent: var(--c-shadow-soft); --shadow-card: var(--c-shadow);
   --glow-violet: var(--accent-glow); --glow-magenta: var(--accent-glow); --glow-cyan: var(--accent-glow);
 }
