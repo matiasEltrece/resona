@@ -123,7 +123,7 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
   };
 
   return (
-    <div className="glass rounded-2xl p-5 fade-up space-y-4">
+    <div className="glass rounded-xl p-5 fade-up space-y-4">
       <audio ref={audioRef} src={result.src} onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} />
 
       <div className="flex items-center gap-4">
@@ -629,7 +629,7 @@ export default function Studio() {
   }, [text, lang, tab, design, refAudio, refText, selectedVoiceId, speed, quality, genState, cloneConsent]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <div className="w-full max-w-6xl mx-auto px-4 py-6 space-y-5">
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 p-1 glass rounded-xl w-fit">
@@ -637,7 +637,7 @@ export default function Studio() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`px-4 py-1.5 rounded-lg text-[13px] font-medium transition-all ${
               tab === t ? "bg-white/10 text-white ring-accent" : "text-muted hover:text-white"
             }`}
           >
@@ -646,11 +646,11 @@ export default function Studio() {
         ))}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-5">
         {/* ── Panel izquierdo ── */}
         <div className="space-y-4">
           {/* Texto */}
-          <div className="glass rounded-2xl p-4">
+          <div className="glass rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-muted uppercase tracking-widest">Texto</p>
               <span className="text-xs text-muted">{text.length}/{maxChars}</span>
@@ -659,7 +659,7 @@ export default function Studio() {
               ref={textRef}
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, maxChars))}
-              rows={5}
+              rows={4}
               placeholder="Escribí o pegá el texto que querés generar..."
               className="w-full bg-transparent resize-none outline-none text-sm leading-relaxed placeholder:text-muted/50"
             />
@@ -696,7 +696,7 @@ export default function Studio() {
           </div>
 
           {/* Idioma */}
-          <div className="glass rounded-2xl p-4 space-y-2 relative z-30">
+          <div className="glass rounded-xl p-4 space-y-2 relative z-30">
             <p className="text-xs text-muted uppercase tracking-widest">Idioma <span className="opacity-50">· 646 disponibles</span></p>
             <div className="relative">
               <button
@@ -749,7 +749,7 @@ export default function Studio() {
           </div>
 
           {/* Panel de voz */}
-          <div className="glass rounded-2xl p-4">
+          <div className="glass rounded-xl p-4">
             <p className="text-xs text-muted uppercase tracking-widest mb-3">
               {tab === "design" ? "Diseño de voz" : "Voz de referencia"}
             </p>
@@ -786,7 +786,7 @@ export default function Studio() {
           </div>
 
           {/* Ajustes de generación (colapsado por defecto) */}
-          <details className="glass rounded-2xl p-4 group">
+          <details className="glass rounded-xl p-4 group">
             <summary className="text-xs text-muted uppercase tracking-widest cursor-pointer select-none flex items-center">
               <span>Ajustes</span>
               <span className="ml-auto group-open:rotate-180 transition-transform">›</span>
@@ -834,11 +834,11 @@ export default function Studio() {
         </div>
 
         {/* ── Panel derecho ── */}
-        <div className="space-y-4 flex flex-col">
+        <div className="space-y-3">
           <button
             onClick={generate}
             disabled={genState === "loading" || !text.trim()}
-            className={`btn-accent rounded-2xl py-4 text-base font-semibold w-full ${genState === "loading" ? "pulse-ring" : ""}`}
+            className={`btn-accent rounded-xl py-3 text-sm font-semibold w-full ${genState === "loading" ? "pulse-ring" : ""}`}
           >
             {genState === "loading" ? (
               <span className="flex items-center justify-center gap-3">
@@ -862,8 +862,8 @@ export default function Studio() {
               { label: "RTF", value: "0.025" },
               { label: "Latencia", value: "<1s" },
             ].map((s) => (
-              <div key={s.label} className="glass rounded-xl p-3">
-                <p className="text-xl font-bold text-gradient">{s.value}</p>
+              <div key={s.label} className="glass rounded-xl p-2.5">
+                <p className="text-lg font-bold text-gradient">{s.value}</p>
                 <p className="text-xs text-muted mt-0.5">{s.label}</p>
               </div>
             ))}
@@ -875,7 +875,7 @@ export default function Studio() {
               <ShareCard audioSrc={result.src} text={text} language={selectedLang.label} mode={tab} />
             </>
           ) : error ? (
-            <div className="glass rounded-2xl p-5 fade-up border border-red-500/20 space-y-3">
+            <div className="glass rounded-xl p-5 fade-up border border-red-500/20 space-y-3">
               <p className="text-red-400 text-sm font-medium">
                 {errorCode === "credits_exhausted" ? "Te quedaste sin caracteres" : "⚠ Error"}
               </p>
@@ -898,7 +898,7 @@ export default function Studio() {
               )}
             </div>
           ) : (
-            <div className="glass rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center flex-1 min-h-[180px]">
+            <div className="glass rounded-xl p-6 flex flex-col items-center justify-center gap-2.5 text-center min-h-[120px]">
               <div className="flex items-end gap-[3px] h-10 opacity-30">
                 {[30, 55, 80, 45, 90, 60, 75, 40, 85, 50].map((h, i) => (
                   <div key={i} className="bar" style={{ height: `${h}%`, animationPlayState: "paused" }} />
