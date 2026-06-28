@@ -130,65 +130,96 @@ export default function LandingPremium({
     sizeCanvas();
     window.addEventListener("resize", sizeCanvas);
 
-    const N = 72;
+    let grad: CanvasGradient | null = null;
+    const onResize = () => { sizeCanvas(); grad = null; };
+    window.removeEventListener("resize", sizeCanvas);
+    window.addEventListener("resize", onResize);
+
     const draw = () => {
       rafRef.current = requestAnimationFrame(draw);
       const ctx = canvas.getContext("2d"); if (!ctx) return;
+      const rect = canvas.getBoundingClientRect();
+      if (Math.abs(rect.width * dpr - canvas.width) > 2 || Math.abs(rect.height * dpr - canvas.height) > 2) { sizeCanvas(); grad = null; }
       const W = canvas.width / dpr, H = canvas.height / dpr;
       ctx.clearRect(0, 0, W, H);
       const cx = W / 2, cy = H / 2;
-      const base = Math.min(W, H) * 0.27;
-      if (curRef.current.length !== N) curRef.current = new Array(N).fill(0.04);
+      const N = 64;
+      if (curRef.current.length !== N) curRef.current = new Array(N).fill(0.08);
       const targets = new Array(N).fill(0);
+      const half = Math.floor(N / 2);
       const isPlaying = playingRef.current;
       const analyser = analyserRef.current, freq = freqRef.current;
       if (isPlaying && analyser && freq) {
         analyser.getByteFrequencyData(freq);
         const usable = Math.floor(freq.length * 0.6);
         for (let n = 0; n < N; n++) {
-          const idx = Math.floor((n / N) * usable);
-          let v = freq[idx] / 255; v = Math.pow(v, 0.9);
+          const j = n <= half ? n : N - n;
+          const idx = Math.floor((j / half) * usable);
+          let v = freq[idx] / 255; v = Math.pow(v, 0.82);
           targets[n] = v;
         }
       } else {
         const t = performance.now() / 1000;
-        for (let n = 0; n < N; n++) targets[n] = 0.05 + 0.06 * (0.6 + 0.4 * Math.sin(t * 1.2 + n * 0.5));
+        for (let n = 0; n < N; n++) targets[n] = 0.10 + 0.055 * (0.5 + 0.5 * Math.sin(t * 1.1 + n * 0.5));
       }
       for (let n = 0; n < N; n++) {
-        const sp = isPlaying ? 0.45 : 0.08;
+        const sp = isPlaying ? 0.45 : 0.06;
         curRef.current[n] += (targets[n] - curRef.current[n]) * sp;
       }
+      const R = Math.min(W, H);
+      const baseR = R * 0.205, maxLen = R * 0.235;
+      const glowCol = "rgba(199,154,69,0.55)";
+      const centerCol = "rgba(210,166,79,0.20)";
+      const ringCol = "rgba(210,166,79,0.24)";
+      const tt = performance.now() / 1000;
+
+      // glow central sutil
+      const gg = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseR * 1.2);
+      gg.addColorStop(0, centerCol); gg.addColorStop(1, "transparent");
+      ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, baseR * 1.2, 0, Math.PI * 2); ctx.fill();
+
       // anillos que respiran
-      const breathe = 1 + 0.02 * Math.sin(performance.now() / 700);
-      ctx.strokeStyle = dark ? "rgba(210,166,79,0.16)" : "rgba(199,154,69,0.20)";
-      ctx.lineWidth = 1;
-      for (const rr of [0.62, 0.82, 1]) { ctx.beginPath(); ctx.arc(cx, cy, base * rr * breathe, 0, Math.PI * 2); ctx.stroke(); }
-      // barras radiales
-      ctx.lineCap = "round";
-      for (let n = 0; n < N; n++) {
-        const ang = (n / N) * Math.PI * 2 - Math.PI / 2;
-        const len = base * 0.45 + curRef.current[n] * base * 1.15;
-        const x1 = cx + Math.cos(ang) * base, y1 = cy + Math.sin(ang) * base;
-        const x2 = cx + Math.cos(ang) * (base + len), y2 = cy + Math.sin(ang) * (base + len);
-        const g = ctx.createLinearGradient(x1, y1, x2, y2);
-        g.addColorStop(0, dark ? "#f0da9f" : "#ecd49a");
-        g.addColorStop(1, dark ? "#d2a64f" : "#c79a45");
-        ctx.strokeStyle = g;
-        ctx.lineWidth = 2.4;
-        ctx.shadowColor = dark ? "rgba(210,166,79,0.45)" : "rgba(199,154,69,0.4)";
-        ctx.shadowBlur = 8;
-        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.strokeStyle = ringCol; ctx.lineWidth = 1;
+      [0.46, 0.7].forEach((f, k) => {
+        const rr = baseR * f + Math.sin(tt * 1.3 + k * 1.7) * (isPlaying ? 4 : 2);
+        ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.stroke();
+      });
+      ctx.globalAlpha = 1;
+
+      if (!grad) {
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, "#e3b94f"); g.addColorStop(0.5, "#c2902f"); g.addColorStop(1, "#8a6322");
+        grad = g;
       }
-      // núcleo
-      ctx.shadowBlur = 0;
-      const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, base * 0.55);
-      core.addColorStop(0, dark ? "rgba(240,218,159,0.30)" : "rgba(236,212,154,0.5)");
-      core.addColorStop(1, "transparent");
-      ctx.fillStyle = core;
-      ctx.beginPath(); ctx.arc(cx, cy, base * 0.55, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = grad; ctx.lineCap = "round";
+      ctx.shadowColor = glowCol; ctx.shadowBlur = 6;
+      const bw = Math.max(2, (2 * Math.PI * baseR / N) * 0.5);
+
+      // barras externas
+      ctx.lineWidth = bw;
+      for (let n = 0; n < N; n++) {
+        const a = -Math.PI / 2 + (n / N) * Math.PI * 2;
+        const len = Math.max(3, curRef.current[n] * maxLen);
+        const ca = Math.cos(a), sa = Math.sin(a);
+        ctx.beginPath();
+        ctx.moveTo(cx + ca * baseR, cy + sa * baseR);
+        ctx.lineTo(cx + ca * (baseR + len), cy + sa * (baseR + len));
+        ctx.stroke();
+      }
+
+      // barras internas (hacia adentro)
+      ctx.shadowBlur = 0; ctx.globalAlpha = 0.5; ctx.lineWidth = Math.max(1.5, bw * 0.7);
+      for (let n = 0; n < N; n++) {
+        const a = -Math.PI / 2 + (n / N) * Math.PI * 2;
+        const innerLen = Math.max(2, curRef.current[n] * maxLen * 0.5);
+        const r1 = baseR - 5, r2 = Math.max(R * 0.05, baseR - 5 - innerLen);
+        const ca = Math.cos(a), sa = Math.sin(a);
+        ctx.beginPath(); ctx.moveTo(cx + ca * r1, cy + sa * r1); ctx.lineTo(cx + ca * r2, cy + sa * r2); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
     };
     draw();
-    return () => { window.removeEventListener("resize", sizeCanvas); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    return () => { window.removeEventListener("resize", sizeCanvas); window.removeEventListener("resize", onResize); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [dark]);
 
   const v = VOICES[index];
@@ -316,14 +347,32 @@ export default function LandingPremium({
             </div>
           </div>
 
-          {/* orb */}
-          <div style={{ position: "relative", width: "100%", maxWidth: 470, aspectRatio: "1", margin: "0 auto" }}>
-            <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
-            <span style={{ position: "absolute", left: 6, top: 6, fontFamily: mono, fontSize: 10, color: "var(--c-text-3)" }}>● LIVE</span>
-            <span style={{ position: "absolute", right: 6, top: 6, fontFamily: mono, fontSize: 10, color: "var(--c-text-3)" }}>RTF 0.025</span>
-            <span style={{ position: "absolute", left: 6, bottom: 36, fontFamily: mono, fontSize: 10, color: "var(--c-text-3)" }}>FREQ 0–8k</span>
-            <span style={{ position: "absolute", right: 6, bottom: 36, fontFamily: mono, fontSize: 10, color: "var(--c-text-3)" }}>646 LANG</span>
-            <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, color: "var(--c-text-2)", border: "1px solid var(--c-border)", borderRadius: 99, padding: "4px 12px", background: "var(--c-surface)", whiteSpace: "nowrap" }}>
+          {/* orb (fiel al diseño: blueprint + brackets + HUD + canvas) */}
+          <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20, minHeight: 540 }}>
+            <div style={{ position: "relative", width: "100%", maxWidth: 470, aspectRatio: "1/1", padding: 30 }}>
+              <svg viewBox="0 0 400 400" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.8 }} fill="none" stroke="var(--c-blueprint)" strokeWidth={1}>
+                <circle cx="200" cy="200" r="70" />
+                <circle cx="200" cy="200" r="120" />
+                <circle cx="200" cy="200" r="172" strokeDasharray="3 7" />
+                <circle cx="200" cy="200" r="196" />
+                <line x1="200" y1="14" x2="200" y2="46" />
+                <line x1="200" y1="354" x2="200" y2="386" />
+                <line x1="14" y1="200" x2="46" y2="200" />
+                <line x1="354" y1="200" x2="386" y2="200" />
+              </svg>
+              <span style={{ position: "absolute", top: 0, left: 0, width: 26, height: 26, borderTop: "2px solid var(--accent-solid)", borderLeft: "2px solid var(--accent-solid)", borderTopLeftRadius: 6, opacity: 0.7 }} />
+              <span style={{ position: "absolute", top: 0, right: 0, width: 26, height: 26, borderTop: "2px solid var(--accent-solid)", borderRight: "2px solid var(--accent-solid)", borderTopRightRadius: 6, opacity: 0.7 }} />
+              <span style={{ position: "absolute", bottom: 0, left: 0, width: 26, height: 26, borderBottom: "2px solid var(--accent-solid)", borderLeft: "2px solid var(--accent-solid)", borderBottomLeftRadius: 6, opacity: 0.7 }} />
+              <span style={{ position: "absolute", bottom: 0, right: 0, width: 26, height: 26, borderBottom: "2px solid var(--accent-solid)", borderRight: "2px solid var(--accent-solid)", borderBottomRightRadius: 6, opacity: 0.7 }} />
+              <span style={{ position: "absolute", top: 9, left: 16, display: "inline-flex", alignItems: "center", gap: 5, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--c-text-3)" }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-solid)", boxShadow: "0 0 7px var(--accent-glow)" }} />LIVE</span>
+              <span style={{ position: "absolute", top: 9, right: 16, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--c-text-3)" }}>RTF 0.025</span>
+              <span style={{ position: "absolute", bottom: 9, left: 16, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--c-text-3)" }}>FREQ 0–8k</span>
+              <span style={{ position: "absolute", bottom: 9, right: 16, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--c-text-3)" }}>646 LANG</span>
+              <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                <canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} />
+              </div>
+            </div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 14px", borderRadius: 99, background: "var(--c-surface)", border: "1px solid var(--c-border)", boxShadow: "var(--c-shadow-soft)", fontSize: 12, color: "var(--c-text-2)", whiteSpace: "nowrap" }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--accent-solid)", boxShadow: "0 0 8px var(--accent-glow)" }} />
               {v.name} · onda en vivo
             </div>
