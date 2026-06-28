@@ -17,7 +17,7 @@ export default async function DashboardPage() {
   // Datos en paralelo
   const [creditsRes, profileRes, gensRes, packsRes, purchasesRes] = await Promise.all([
     service.from("kyma_credits").select("used, limit").eq("user_id", user.id).eq("month", monthKey).single(),
-    service.from("kyma_profiles").select("plan, extra_credits, lemon_customer_portal_url").eq("id", user.id).single(),
+    service.from("kyma_profiles").select("plan, extra_credits, lemon_customer_portal_url, subscription_status, subscription_renews_at, subscription_ends_at").eq("id", user.id).single(),
     service.from("kyma_generations").select("mode, language, text_length, duration_ms, created_at, provider")
       .eq("user_id", user.id).order("created_at", { ascending: false }).limit(12),
     service.from("kyma_credit_packs").select("id, name, chars, price_usd, buy_url").eq("active", true).order("sort"),
@@ -30,6 +30,9 @@ export default async function DashboardPage() {
   const plan = profileRes.data?.plan ?? "free";
   const extraCredits = profileRes.data?.extra_credits ?? 0;
   const portalUrl = profileRes.data?.lemon_customer_portal_url ?? null;
+  const subStatus = profileRes.data?.subscription_status ?? null;
+  const subRenewsAt = profileRes.data?.subscription_renews_at ?? null;
+  const subEndsAt = profileRes.data?.subscription_ends_at ?? null;
   const generations = gensRes.data ?? [];
   const packs = packsRes.data ?? [];
   const purchases = purchasesRes.data ?? [];
@@ -42,6 +45,7 @@ export default async function DashboardPage() {
       plan={plan}
       extraCredits={extraCredits}
       portalUrl={portalUrl}
+      subscription={{ status: subStatus, renewsAt: subRenewsAt, endsAt: subEndsAt }}
       generations={generations}
       packs={packs}
       purchases={purchases}

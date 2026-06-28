@@ -8,9 +8,11 @@ export const runtime = "nodejs";
  * Webhook de Lemon Squeezy. Verifica HMAC y actualiza el plan del usuario.
  *
  * Eventos:
- *  - subscription_created / _updated / _resumed / _unpaused → setea el plan
- *  - subscription_cancelled / _expired / _paused           → vuelve a free
- *  - order_created (pack de créditos one-time)             → suma créditos
+ *  - subscription_created / _updated / _resumed / _unpaused → setea el plan + estado
+ *  - subscription_cancelled  → MANTIENE el plan hasta fin del período (cancel-at-period-end)
+ *  - subscription_expired    → el período pagado terminó → recién ahí baja a free
+ *  - subscription_paused     → pausa la suscripción → free
+ *  - order_created (pack de créditos one-time) → suma créditos
  *
  * Env: LEMON_WEBHOOK_SECRET
  */
@@ -40,9 +42,9 @@ async function resolveUserId(payload: LemonPayload): Promise<string | null> {
   return data?.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())?.id ?? null;
 }
 
-async function setPlan(userId: string, planId: string) {
+async function updateProfile(userId: string, fields: Record<string, unknown>) {
   const service = await createServiceClient();
-  await service.from("kyma_profiles").update({ plan: planId, updated_at: new Date().toISOString() }).eq("id", userId);
+  await service.from("kyma_profiles").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", userId);
 }
 
 export async function POST(req: NextRequest) {
@@ -71,33 +73,40 @@ export async function POST(req: NextRequest) {
 
     const service = await createServiceClient();
 
+    const status = String(attrs.status ?? "");
+    const renewsAt = (attrs.renews_at as string | null) ?? null;
+    const endsAt = (attrs.ends_at as string | null) ?? null;
+    const portal = (attrs.urls as { customer_portal?: string } | undefined)?.customer_portal ?? null;
+
     switch (event) {
       case "subscription_created":
       case "subscription_updated":
       case "subscription_resumed":
       case "subscription_unpaused": {
-        // Mapear variant → plan
+        // Mapear variant → plan (si no hay mapeo, asumimos 'creator' como default pago)
         const variantId = String(attrs.variant_id ?? "");
         const { data: plan } = await service
-          .from("kyma_plans")
-          .select("id")
-          .eq("lemon_variant_id", variantId)
-          .single();
-        // Si no hay mapeo, asumimos 'creator' como default pago
-        await setPlan(userId, plan?.id ?? "creator");
-        // Guardar el portal de cliente de Lemon (para gestionar/cancelar la suscripción)
-        const urls = attrs.urls as { customer_portal?: string } | undefined;
-        if (urls?.customer_portal) {
-          await service.from("kyma_profiles")
-            .update({ lemon_customer_portal_url: urls.customer_portal })
-            .eq("id", userId);
-        }
+          .from("kyma_plans").select("id").eq("lemon_variant_id", variantId).single();
+        await updateProfile(userId, {
+          plan: plan?.id ?? "creator",
+          subscription_status: status || "active",
+          subscription_renews_at: renewsAt,
+          subscription_ends_at: endsAt,
+          ...(portal ? { lemon_customer_portal_url: portal } : {}),
+        });
         break;
       }
       case "subscription_cancelled":
+        // Cancela pero MANTIENE el plan hasta fin del período pagado (cancel-at-period-end).
+        // No bajamos a free acá; eso pasa recién en subscription_expired.
+        await updateProfile(userId, { subscription_status: "cancelled", subscription_ends_at: endsAt });
+        break;
       case "subscription_expired":
+        // El período pagado terminó → recién ahora baja a free.
+        await updateProfile(userId, { plan: "free", subscription_status: "expired" });
+        break;
       case "subscription_paused":
-        await setPlan(userId, "free");
+        await updateProfile(userId, { plan: "free", subscription_status: "paused" });
         break;
 
       case "order_created": {

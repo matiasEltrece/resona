@@ -30,6 +30,7 @@ interface Props {
   plan: string;
   extraCredits: number;
   portalUrl?: string | null;
+  subscription?: { status: string | null; renewsAt: string | null; endsAt: string | null };
   generations: Generation[];
   packs: Pack[];
   purchases: Purchase[];
@@ -39,7 +40,7 @@ interface Props {
 
 const PLAN_LABEL: Record<string, string> = { free: "Gratis", creator: "Creator", pro: "Pro", admin: "Admin" };
 
-export default function DashboardClient({ user, credits, plan, extraCredits, portalUrl, generations, packs, purchases, upgradeUrls, isAdmin }: Props) {
+export default function DashboardClient({ user, credits, plan, extraCredits, portalUrl, subscription, generations, packs, purchases, upgradeUrls, isAdmin }: Props) {
   const unlimited = credits.limit >= 1_000_000_000;
   const pct = credits.limit > 0 ? Math.min(100, Math.round((credits.used / credits.limit) * 100)) : 0;
   const monthlyRemaining = Math.max(0, credits.limit - credits.used);
@@ -157,6 +158,14 @@ export default function DashboardClient({ user, credits, plan, extraCredits, por
             <h2 className="font-semibold">Tu plan</h2>
             <span className="text-sm text-gradient font-semibold">{PLAN_LABEL[plan] ?? plan}</span>
           </div>
+          {subscription?.status === "cancelled" && subscription.endsAt && (
+            <p className="text-xs text-yellow-400 bg-yellow-500/10 rounded-lg px-3 py-2">
+              Suscripción cancelada — tu plan sigue activo hasta el <strong>{fmtDate(subscription.endsAt)}</strong>. Después pasás a Free.
+            </p>
+          )}
+          {(subscription?.status === "active" || subscription?.status === "on_trial") && subscription.renewsAt && (
+            <p className="text-xs text-muted">Se renueva el {fmtDate(subscription.renewsAt)}.</p>
+          )}
           {plan === "pro" ? (
             <p className="text-sm text-muted">Estás en el plan más alto: 1.000.000 caracteres/mes + API. 🎉</p>
           ) : (

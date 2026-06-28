@@ -14,7 +14,7 @@ export default async function StudioPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <NavbarAuth />
-      <Studio isAuthed />
+      <Studio />
     </div>
   );
 }
