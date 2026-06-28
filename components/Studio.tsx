@@ -9,6 +9,7 @@ import {
 import type { GenerateRequest, VoiceDesign, Quality } from "@/lib/inference/types";
 import ShareCard from "./ShareCard";
 import VoiceOrb from "./VoiceOrb";
+import voiceLibraryRaw from "@/lib/voice-library.json";
 
 /* ─── tipos locales ──────────────────────────────────────────────────────── */
 type Tab = "design" | "clone";
@@ -161,25 +162,18 @@ function Pills<T extends string>({
   );
 }
 
-/* Galería de voces con preview de audio (las 6 de la home). Tocar ▶ escucha el
-   sample; tocar la tarjeta aplica el diseño de esa voz. */
-const GALLERY_VOICES: { name: string; char: string; flag: string; src: string; design: VoiceDesign }[] = [
-  { name: "Aurora", char: "Femenina · cálida",    flag: "🇦🇷", src: "/radio/aurora.wav", design: { gender: "female", age: "young_adult", pitch: "moderate" } },
-  { name: "Nova",   char: "Femenina · enérgica",  flag: "🇧🇷", src: "/radio/nova.wav",   design: { gender: "female", age: "young_adult", pitch: "high" } },
-  { name: "Sora",   char: "Femenina · suave",     flag: "🇯🇵", src: "/radio/sora.wav",   design: { gender: "female", age: "teenager",    pitch: "moderate" } },
-  { name: "Sol",    char: "Femenina · infantil",  flag: "🇦🇷", src: "/radio/sol.wav",    design: { gender: "female", age: "child",       pitch: "high" } },
-  { name: "Vera",   char: "Femenina · mayor",     flag: "🇪🇸", src: "/radio/vera.wav",   design: { gender: "female", age: "elderly",     pitch: "low" } },
-  { name: "Echo",   char: "Femenina · suave",     flag: "🇪🇸", src: "/radio/echo.wav",   design: { gender: "female", age: "young_adult", pitch: "low" } },
-  { name: "Iris",   char: "Femenina · UK",        flag: "🇬🇧", src: "/radio/iris.wav",   design: { gender: "female", age: "middle_aged", pitch: "moderate", accent: "british" } },
-  { name: "Mei",    char: "Femenina · aguda",     flag: "🇨🇳", src: "/radio/mei.wav",    design: { gender: "female", age: "young_adult", pitch: "high" } },
-  { name: "Olivia", char: "Femenina · ASMR",      flag: "🇺🇸", src: "/radio/olivia.wav", design: { gender: "female", age: "young_adult", pitch: "moderate", whisper: true } },
-  { name: "Atlas",  char: "Masculina · grave",    flag: "🇬🇧", src: "/radio/atlas.wav",  design: { gender: "male",   age: "middle_aged", pitch: "low" } },
-  { name: "Leo",    char: "Masculina · narrador", flag: "🇮🇹", src: "/radio/leo.wav",    design: { gender: "male",   age: "elderly",     pitch: "low" } },
-  { name: "Bruno",  char: "Masculina · joven",    flag: "🇦🇷", src: "/radio/bruno.wav",  design: { gender: "male",   age: "young_adult", pitch: "moderate" } },
-  { name: "Tomás",  char: "Masculina · locutor",  flag: "🇦🇷", src: "/radio/tomas.wav",  design: { gender: "male",   age: "middle_aged", pitch: "moderate" } },
-  { name: "Max",    char: "Masculina · US",       flag: "🇺🇸", src: "/radio/max.wav",    design: { gender: "male",   age: "young_adult", pitch: "high", accent: "american" } },
-  { name: "Kenji",  char: "Masculina · grave",    flag: "🇯🇵", src: "/radio/kenji.wav",  design: { gender: "male",   age: "middle_aged", pitch: "low" } },
-  { name: "Dante",  char: "Masculina · profunda", flag: "🇮🇹", src: "/radio/dante.wav",  design: { gender: "male",   age: "elderly",     pitch: "very_low" } },
+/* Biblioteca de voces — matriz sistemática (~100), generada (scripts/generate-voice-library.mjs).
+   Filtrable por género/edad + búsqueda (estilo ElevenLabs). Tocar ▶ escucha; la tarjeta aplica el diseño. */
+type LibVoice = { id: string; name: string; gender: "female" | "male"; age: string; pitch: string; lang: string; accent: string | null; whisper: boolean; flag: string; useCase: string; design: VoiceDesign; file: string };
+const VOICE_LIBRARY = voiceLibraryRaw as unknown as LibVoice[];
+
+const AGE_FILTERS: { value: string; label: string }[] = [
+  { value: "all", label: "Todas" },
+  { value: "child", label: "Niño" },
+  { value: "teenager", label: "Adolescente" },
+  { value: "young_adult", label: "Joven" },
+  { value: "middle_aged", label: "Mediana" },
+  { value: "elderly", label: "Mayor" },
 ];
 
 const AGE_ES: Record<string, string> = { child: "Niño", teenager: "Adolescente", young_adult: "Joven", middle_aged: "Mediana", elderly: "Mayor" };
@@ -194,48 +188,81 @@ function designSummary(d: VoiceDesign): string {
 
 function VoiceGallery({ design, setDesign }: { design: VoiceDesign; setDesign: (d: VoiceDesign) => void }) {
   const [playing, setPlaying] = useState<string | null>(null);
+  const [gender, setGender] = useState<"all" | "female" | "male">("all");
+  const [age, setAge] = useState("all");
+  const [q, setQ] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   useEffect(() => () => { audioRef.current?.pause(); }, []);
 
-  const preview = (e: React.MouseEvent, v: (typeof GALLERY_VOICES)[number]) => {
+  const preview = (e: React.MouseEvent, v: LibVoice) => {
     e.stopPropagation();
     if (!audioRef.current) audioRef.current = new Audio();
     const a = audioRef.current;
-    if (playing === v.name) { a.pause(); setPlaying(null); return; }
-    a.src = v.src; a.currentTime = 0; a.play().catch(() => {});
+    if (playing === v.id) { a.pause(); setPlaying(null); return; }
+    a.src = v.file; a.currentTime = 0; a.play().catch(() => {});
     a.onended = () => setPlaying(null);
-    setPlaying(v.name);
+    setPlaying(v.id);
   };
 
+  const ql = q.trim().toLowerCase();
+  const filtered = VOICE_LIBRARY.filter((v) =>
+    (gender === "all" || v.gender === gender) &&
+    (age === "all" || v.age === age) &&
+    (!ql || `${v.name} ${v.useCase} ${v.lang} ${v.accent ?? ""}`.toLowerCase().includes(ql)),
+  );
+  const chip = (active: boolean) => `text-[11px] px-2 py-1 rounded-lg transition-all ${active ? "ring-accent text-white bg-white/10" : "glass glass-hover text-muted"}`;
+
   return (
-    <div className="grid grid-cols-1 gap-2 max-h-[460px] overflow-y-auto pr-1">
-      {GALLERY_VOICES.map((v) => {
-        const selected = JSON.stringify(design) === JSON.stringify(v.design);
-        return (
-          <div
-            key={v.name}
-            onClick={() => setDesign(v.design)}
-            className={`flex items-center gap-2.5 glass glass-hover rounded-xl p-2.5 cursor-pointer transition-all ${selected ? "ring-accent" : ""}`}
-          >
-            <button
-              onClick={(e) => preview(e, v)}
-              aria-label={playing === v.name ? `Pausar ${v.name}` : `Escuchar ${v.name}`}
-              className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
-              style={{ background: "var(--accent-soft)", color: "var(--accent-solid)" }}
+    <div className="space-y-2">
+      <input
+        value={q} onChange={(e) => setQ(e.target.value)}
+        placeholder="Buscar voz, idioma, estilo…"
+        className="w-full glass rounded-lg px-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted/50"
+      />
+      <div className="flex flex-wrap gap-1">
+        {(["all", "female", "male"] as const).map((g) => (
+          <button key={g} onClick={() => setGender(g)} className={chip(gender === g)}>
+            {g === "all" ? "Todas" : g === "female" ? "♀ Fem" : "♂ Masc"}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {AGE_FILTERS.map((a) => (
+          <button key={a.value} onClick={() => setAge(a.value)} className={chip(age === a.value)}>{a.label}</button>
+        ))}
+      </div>
+      <p className="text-[10px] text-muted">{filtered.length} de {VOICE_LIBRARY.length} voces</p>
+
+      <div className="grid grid-cols-1 gap-2 max-h-[420px] overflow-y-auto pr-1">
+        {filtered.map((v) => {
+          const selected = JSON.stringify(design) === JSON.stringify(v.design);
+          return (
+            <div
+              key={v.id}
+              onClick={() => setDesign(v.design)}
+              className={`flex items-center gap-2.5 glass glass-hover rounded-xl p-2.5 cursor-pointer transition-all ${selected ? "ring-accent" : ""}`}
             >
-              {playing === v.name ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
-              ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20" /></svg>
-              )}
-            </button>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold truncate">{v.flag} {v.name}</p>
-              <p className="text-xs text-muted truncate">{v.char}</p>
+              <button
+                onClick={(e) => preview(e, v)}
+                aria-label={playing === v.id ? `Pausar ${v.name}` : `Escuchar ${v.name}`}
+                className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center"
+                style={{ background: "var(--accent-soft)", color: "var(--accent-solid)" }}
+              >
+                {playing === v.id ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20" /></svg>
+                )}
+              </button>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">{v.flag} {v.name}</p>
+                <p className="text-xs text-muted truncate">{designSummary(v.design)}</p>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md flex-shrink-0" style={{ background: "var(--accent-soft)", color: "var(--accent-solid)" }}>{v.useCase}</span>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
