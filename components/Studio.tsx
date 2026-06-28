@@ -201,12 +201,22 @@ function Pills<T extends string>({
 /* Galería de voces con preview de audio (las 6 de la home). Tocar ▶ escucha el
    sample; tocar la tarjeta aplica el diseño de esa voz. */
 const GALLERY_VOICES: { name: string; char: string; flag: string; src: string; design: VoiceDesign }[] = [
-  { name: "Aurora", char: "Femenina · cálida",   flag: "🇦🇷", src: "/radio/aurora.wav", design: { gender: "female", age: "young_adult", pitch: "moderate" } },
-  { name: "Atlas",  char: "Masculina · grave",   flag: "🇬🇧", src: "/radio/atlas.wav",  design: { gender: "male",   age: "middle_aged", pitch: "low" } },
-  { name: "Nova",   char: "Femenina · enérgica", flag: "🇧🇷", src: "/radio/nova.wav",   design: { gender: "female", age: "young_adult", pitch: "high" } },
-  { name: "Sora",   char: "Femenina · suave",    flag: "🇯🇵", src: "/radio/sora.wav",   design: { gender: "female", age: "teenager",    pitch: "moderate" } },
-  { name: "Echo",   char: "Femenina · susurro",  flag: "🇪🇸", src: "/radio/echo.wav",   design: { gender: "female", age: "young_adult", pitch: "low" } },
-  { name: "Leo",    char: "Masculina · narrador",flag: "🇮🇹", src: "/radio/leo.wav",    design: { gender: "male",   age: "elderly",     pitch: "low" } },
+  { name: "Aurora", char: "Femenina · cálida",    flag: "🇦🇷", src: "/radio/aurora.wav", design: { gender: "female", age: "young_adult", pitch: "moderate" } },
+  { name: "Nova",   char: "Femenina · enérgica",  flag: "🇧🇷", src: "/radio/nova.wav",   design: { gender: "female", age: "young_adult", pitch: "high" } },
+  { name: "Sora",   char: "Femenina · suave",     flag: "🇯🇵", src: "/radio/sora.wav",   design: { gender: "female", age: "teenager",    pitch: "moderate" } },
+  { name: "Sol",    char: "Femenina · infantil",  flag: "🇦🇷", src: "/radio/sol.wav",    design: { gender: "female", age: "child",       pitch: "high" } },
+  { name: "Vera",   char: "Femenina · mayor",     flag: "🇪🇸", src: "/radio/vera.wav",   design: { gender: "female", age: "elderly",     pitch: "low" } },
+  { name: "Echo",   char: "Femenina · suave",     flag: "🇪🇸", src: "/radio/echo.wav",   design: { gender: "female", age: "young_adult", pitch: "low" } },
+  { name: "Iris",   char: "Femenina · UK",        flag: "🇬🇧", src: "/radio/iris.wav",   design: { gender: "female", age: "middle_aged", pitch: "moderate", accent: "british" } },
+  { name: "Mei",    char: "Femenina · aguda",     flag: "🇨🇳", src: "/radio/mei.wav",    design: { gender: "female", age: "young_adult", pitch: "high" } },
+  { name: "Olivia", char: "Femenina · ASMR",      flag: "🇺🇸", src: "/radio/olivia.wav", design: { gender: "female", age: "young_adult", pitch: "moderate", whisper: true } },
+  { name: "Atlas",  char: "Masculina · grave",    flag: "🇬🇧", src: "/radio/atlas.wav",  design: { gender: "male",   age: "middle_aged", pitch: "low" } },
+  { name: "Leo",    char: "Masculina · narrador", flag: "🇮🇹", src: "/radio/leo.wav",    design: { gender: "male",   age: "elderly",     pitch: "low" } },
+  { name: "Bruno",  char: "Masculina · joven",    flag: "🇦🇷", src: "/radio/bruno.wav",  design: { gender: "male",   age: "young_adult", pitch: "moderate" } },
+  { name: "Tomás",  char: "Masculina · locutor",  flag: "🇦🇷", src: "/radio/tomas.wav",  design: { gender: "male",   age: "middle_aged", pitch: "moderate" } },
+  { name: "Max",    char: "Masculina · US",       flag: "🇺🇸", src: "/radio/max.wav",    design: { gender: "male",   age: "young_adult", pitch: "high", accent: "american" } },
+  { name: "Kenji",  char: "Masculina · grave",    flag: "🇯🇵", src: "/radio/kenji.wav",  design: { gender: "male",   age: "middle_aged", pitch: "low" } },
+  { name: "Dante",  char: "Masculina · profunda", flag: "🇮🇹", src: "/radio/dante.wav",  design: { gender: "male",   age: "elderly",     pitch: "very_low" } },
 ];
 
 function VoiceGallery({ design, setDesign }: { design: VoiceDesign; setDesign: (d: VoiceDesign) => void }) {
@@ -225,7 +235,7 @@ function VoiceGallery({ design, setDesign }: { design: VoiceDesign; setDesign: (
   };
 
   return (
-    <div className="grid grid-cols-1 gap-2">
+    <div className="grid grid-cols-1 gap-2 max-h-[460px] overflow-y-auto pr-1">
       {GALLERY_VOICES.map((v) => {
         const selected = JSON.stringify(design) === JSON.stringify(v.design);
         return (
@@ -253,6 +263,62 @@ function VoiceGallery({ design, setDesign }: { design: VoiceDesign; setDesign: (
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* Panel-guía: enseña el sistema de diseño de voz (atributos + recetas) — la
+   respuesta a "1000+ voces" sin listar mil. Las recetas aplican un diseño. */
+function GuideRow({ label, items }: { label: string; items: string }) {
+  return (
+    <div className="flex gap-2 items-baseline">
+      <span className="text-[10px] text-muted uppercase tracking-widest w-12 flex-shrink-0">{label}</span>
+      <span className="text-muted">{items}</span>
+    </div>
+  );
+}
+
+const RECIPES: { label: string; design: VoiceDesign }[] = [
+  { label: "Documental", design: { gender: "male", age: "middle_aged", pitch: "low" } },
+  { label: "Niña alegre", design: { gender: "female", age: "child", pitch: "high" } },
+  { label: "Abuelo sabio", design: { gender: "male", age: "elderly", pitch: "very_low" } },
+  { label: "ASMR", design: { gender: "female", age: "young_adult", pitch: "moderate", whisper: true } },
+  { label: "Influencer", design: { gender: "female", age: "young_adult", pitch: "high" } },
+];
+
+function VoiceGuide({ onRecipe }: { onRecipe: (d: VoiceDesign) => void }) {
+  return (
+    <div className="glass rounded-xl p-4 space-y-3 text-xs">
+      <p className="text-xs text-muted uppercase tracking-widest">Guía · qué voces podés crear</p>
+      <p className="text-muted leading-relaxed">
+        No hay una lista cerrada: <span className="text-gradient font-semibold">diseñás</span> la voz combinando
+        atributos, o <span className="font-semibold" style={{ color: "var(--accent-solid)" }}>clonás</span> una con 10s de audio.
+      </p>
+      <div className="space-y-1.5">
+        <GuideRow label="Género" items="Femenina · Masculina" />
+        <GuideRow label="Edad" items="Niño · Adolescente · Joven · Mediana · Mayor" />
+        <GuideRow label="Tono" items="Muy grave → Muy agudo (5)" />
+        <GuideRow label="Estilo" items="Normal · Susurro (ASMR)" />
+      </div>
+      <p className="text-[11px] text-muted leading-relaxed">
+        + acentos del inglés (10) · dialectos del chino (12) · <strong className="text-white/80">646 idiomas</strong>.
+        Son <strong className="text-white/80">1000+ combinaciones</strong> — y la clonación es infinita.
+      </p>
+      <div>
+        <p className="text-[10px] text-muted uppercase tracking-widest mb-1.5">Recetas rápidas (tocá para aplicar)</p>
+        <div className="flex flex-wrap gap-1.5">
+          {RECIPES.map((r) => (
+            <button
+              key={r.label}
+              onClick={() => onRecipe(r.design)}
+              className="text-[11px] px-2 py-1 glass glass-hover rounded-lg text-muted hover:text-white"
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="text-[11px] text-muted">💡 Insertá efectos como <code>[laughter]</code> o <code>[sigh]</code> con los botones del texto.</p>
     </div>
   );
 }
@@ -912,15 +978,8 @@ export default function Studio() {
             </div>
           )}
 
-          {/* Tip */}
-          <div className="glass rounded-xl p-3 text-xs text-muted space-y-1">
-            <p className="text-white/60 font-medium">💡 Cómo sacar el máximo:</p>
-            <ul className="space-y-0.5 list-disc list-inside">
-              <li>Insertá efectos como <code>[laughter]</code> o <code>[sigh]</code> con los botones</li>
-              <li>Acentos del inglés: cambiá el idioma a English para habilitarlos</li>
-              <li>La voz de clonación mejora con +30s de audio limpio</li>
-            </ul>
-          </div>
+          {/* Guía de voces */}
+          <VoiceGuide onRecipe={(d) => { setTab("design"); setDesign(d); }} />
         </div>
       </div>
     </div>
