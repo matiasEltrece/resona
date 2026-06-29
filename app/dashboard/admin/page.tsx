@@ -67,7 +67,10 @@ export default async function AdminPage() {
           <h1 className="text-2xl font-bold">Centro de control <span className="text-xs text-muted font-normal">· admin</span></h1>
           <p className="text-muted text-sm mt-1">Datos en vivo · solo visible para vos</p>
         </div>
-        <Link href="/dashboard" className="text-sm text-muted hover:text-white">← Volver</Link>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard/admin/watermark" className="text-sm btn-accent px-3 py-1.5 rounded-lg">Detección watermark</Link>
+          <Link href="/dashboard" className="text-sm text-muted hover:text-white">← Volver</Link>
+        </div>
       </div>
 
       {/* KPIs principales */}
