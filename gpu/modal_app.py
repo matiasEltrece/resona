@@ -30,13 +30,13 @@ import modal
 # ─── Imagen Docker ────────────────────────────────────────────────────────
 image = (
     modal.Image.debian_slim(python_version="3.11")
-    .apt_install("ffmpeg")
     .pip_install(
         "torch==2.4.0",
         "torchaudio==2.4.0",
         extra_index_url="https://download.pytorch.org/whl/cu121",
     )
     .pip_install("omnivoice", "soundfile", "numpy")
+    .apt_install("ffmpeg")
 )
 
 app = modal.App("kyma", image=image)
