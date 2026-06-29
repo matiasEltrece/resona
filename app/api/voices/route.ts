@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data } = await supabase
     .from("kyma_voices")
-    .select("id, name, ref_text, language, created_at")
+    .select("id, name, ref_text, language, created_at, kind, design, seed")
     .order("created_at", { ascending: false });
 
   return NextResponse.json({ voices: data ?? [] });
@@ -23,11 +23,34 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let body: { name?: string; audioBase64?: string; refText?: string; language?: string };
+  let body: { name?: string; audioBase64?: string; refText?: string; language?: string; kind?: string; design?: unknown; seed?: number };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+  }
+
+  // ── Voz DISEÑADA (atributos + semilla fija → reutilizable y consistente) ──
+  if (body.kind === "design" || body.design) {
+    if (!body.name?.trim() || !body.design) {
+      return NextResponse.json({ error: "Falta el nombre o el diseño" }, { status: 400 });
+    }
+    const svc = await createServiceClient();
+    const { data, error } = await svc
+      .from("kyma_voices")
+      .insert({
+        user_id: user.id,
+        name: body.name.trim().slice(0, 60),
+        kind: "design",
+        design: body.design,
+        seed: typeof body.seed === "number" ? body.seed : null,
+        language: body.language || null,
+        storage_path: null,
+      })
+      .select("id, name, ref_text, language, created_at, kind, design, seed")
+      .single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ voice: data });
   }
 
   if (!body.name?.trim() || !body.audioBase64) {
@@ -57,7 +80,7 @@ export async function POST(req: NextRequest) {
       ref_text: body.refText?.trim() || null,
       language: body.language || null,
     })
-    .select("id, name, ref_text, language, created_at")
+    .select("id, name, ref_text, language, created_at, kind, design, seed")
     .single();
 
   if (error) {

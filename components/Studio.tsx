@@ -354,14 +354,26 @@ function VoiceGuide({ onRecipe }: { onRecipe: (d: VoiceDesign) => void }) {
 }
 
 function DesignPanel({
-  design, setDesign, lang,
+  design, setDesign, lang, savedDesigns, onSaveDesign, onLoadDesign, onDeleteVoice,
 }: {
   design: VoiceDesign;
   setDesign: (d: VoiceDesign) => void;
   lang: string;
+  savedDesigns: SavedVoice[];
+  onSaveDesign: (name: string) => Promise<void> | void;
+  onLoadDesign: (v: SavedVoice) => void;
+  onDeleteVoice: (id: string) => void;
 }) {
   const english = isEnglish(lang);
   const chinese = isChinese(lang);
+  const [saveName, setSaveName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!saveName.trim()) return;
+    setSaving(true);
+    try { await onSaveDesign(saveName.trim()); setSaveName(""); } finally { setSaving(false); }
+  };
 
   return (
     <div className="space-y-4">
@@ -369,6 +381,34 @@ function DesignPanel({
       <div className="flex items-center gap-2 flex-wrap pb-2 border-b border-border">
         <span className="text-[10px] text-muted uppercase tracking-widest">Voz actual</span>
         <span className="text-sm font-semibold text-gradient">{designSummary(design)}</span>
+      </div>
+
+      {/* Mis voces diseñadas (guardadas, reutilizables y consistentes) */}
+      <div>
+        <p className="text-xs text-muted mb-1.5 uppercase tracking-widest">Mis voces guardadas</p>
+        {savedDesigns.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {savedDesigns.map((v) => (
+              <span key={v.id} className="group flex items-center rounded-lg text-sm glass glass-hover">
+                <button onClick={() => onLoadDesign(v)} className="pl-3 py-1.5 text-white" title="Usar esta voz">★ {v.name}</button>
+                <button onClick={() => onDeleteVoice(v.id)} className="pr-2 pl-1 py-1.5 text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" title="Borrar">×</button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted mb-2">Guardá la voz actual para reusarla siempre igual (ideal para un avatar).</p>
+        )}
+        <div className="flex gap-2">
+          <input
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            placeholder="Nombre (ej. «Voz de mi avatar»)"
+            className="flex-1 glass rounded-lg px-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted/50"
+          />
+          <button onClick={save} disabled={saving || !saveName.trim()} className="btn-accent px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-50">
+            {saving ? "Guardando…" : "Guardar"}
+          </button>
+        </div>
       </div>
 
       {/* Galería de voces con preview */}
@@ -443,6 +483,9 @@ interface SavedVoice {
   ref_text: string | null;
   language: string | null;
   created_at: string;
+  kind?: string;
+  design?: VoiceDesign | null;
+  seed?: number | null;
 }
 
 function ClonePanel({
@@ -506,14 +549,15 @@ function ClonePanel({
     onVoicesChanged();
   };
 
+  const cloneVoices = savedVoices.filter((v) => v.kind !== "design");
   return (
     <div className="space-y-3">
-      {/* Mis voces guardadas */}
-      {savedVoices.length > 0 && (
+      {/* Mis voces guardadas (clonadas) */}
+      {cloneVoices.length > 0 && (
         <div>
-          <p className="text-xs text-muted mb-1.5 uppercase tracking-widest">Mis voces</p>
+          <p className="text-xs text-muted mb-1.5 uppercase tracking-widest">Mis voces clonadas</p>
           <div className="flex flex-wrap gap-1.5">
-            {savedVoices.map((v) => (
+            {cloneVoices.map((v) => (
               <span
                 key={v.id}
                 className={`group flex items-center gap-1 rounded-lg text-sm transition-all ${
@@ -655,6 +699,27 @@ export default function Studio() {
   }, []);
 
   useEffect(() => { loadVoices(); }, [loadVoices]);
+
+  // ── Voces diseñadas guardadas (reutilizables + consistentes vía semilla) ──
+  const savedDesigns = savedVoices.filter((v) => v.kind === "design");
+  const saveDesignVoice = useCallback(async (name: string) => {
+    const s = seed.trim() && !Number.isNaN(Number(seed)) ? Number(seed) : Math.floor(Math.random() * 1_000_000_000);
+    if (!seed.trim()) setSeed(String(s)); // fija la semilla → la voz suena siempre igual
+    await fetch("/api/voices", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "design", name, design, seed: s, language: lang }),
+    }).catch(() => {});
+    loadVoices();
+  }, [seed, design, lang, loadVoices]);
+  const loadDesignVoice = useCallback((v: SavedVoice) => {
+    if (v.design) setDesign(v.design);
+    setSeed(v.seed != null ? String(v.seed) : "");
+  }, []);
+  const deleteSavedVoice = useCallback(async (id: string) => {
+    if (selectedVoiceId === id) setSelectedVoiceId(null);
+    await fetch(`/api/voices/${id}`, { method: "DELETE" }).catch(() => {});
+    loadVoices();
+  }, [loadVoices, selectedVoiceId]);
 
   /** Inserta un tag expresivo en la posición del cursor. */
   const insertTag = (tag: string) => {
@@ -824,7 +889,8 @@ export default function Studio() {
               {tab === "design" ? "Diseño de voz" : "Voz de referencia"}
             </p>
             {tab === "design" ? (
-              <DesignPanel design={design} setDesign={setDesign} lang={lang} />
+              <DesignPanel design={design} setDesign={setDesign} lang={lang}
+                savedDesigns={savedDesigns} onSaveDesign={saveDesignVoice} onLoadDesign={loadDesignVoice} onDeleteVoice={deleteSavedVoice} />
             ) : (
               <>
                 <ClonePanel
