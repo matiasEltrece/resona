@@ -15,13 +15,17 @@ import voiceLibraryRaw from "@/lib/voice-library.json";
 type Tab = "design" | "clone";
 type GenState = "idle" | "loading" | "done" | "error";
 
-interface AudioResult {
+interface Generation {
+  id: string;
   src: string;
   durationMs: number;
   rtf: number;
   provider: string;
   isReal: boolean;
   commercial?: boolean;
+  text: string;
+  langLabel: string;
+  mode: "design" | "clone";
 }
 
 /* ─── utilidades ──────────────────────────────────────────────────────────── */
@@ -31,16 +35,27 @@ function b64ToDataUrl(b64: string, mime: string) {
 
 /* ─── subcomponentes de UI ───────────────────────────────────────────────── */
 
-function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void }) {
-  const audioRef = useRef<HTMLAudioElement>(null);
+/* Historial de generaciones en el centro: orb + reproductor compartido + lista
+   (más nuevo arriba). Tocar play en cualquiera lo reproduce por el orb. */
+function GenerationStage({ items, loading }: { items: Generation[]; loading: boolean }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const ctxRef = useRef<AudioContext | null>(null);
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+  const [current, setCurrent] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const duration = result.durationMs / 1000;
 
-  const ensureAudio = () => {
+  useEffect(() => {
+    if (!audioRef.current) audioRef.current = new Audio();
+    const a = audioRef.current;
+    const onTime = () => setProgress((a.currentTime / (a.duration || 1)) * 100);
+    const onEnd = () => { setPlaying(false); setProgress(0); };
+    a.addEventListener("timeupdate", onTime);
+    a.addEventListener("ended", onEnd);
+    return () => { a.removeEventListener("timeupdate", onTime); a.removeEventListener("ended", onEnd); a.pause(); ctxRef.current?.close().catch(() => {}); };
+  }, []);
+
+  const ensureCtx = () => {
     if (ctxRef.current || !audioRef.current) return;
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const ctx = new AC();
@@ -52,93 +67,76 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
     ctxRef.current = ctx;
     setAnalyser(an);
   };
-  useEffect(() => () => { ctxRef.current?.close().catch(() => {}); }, []);
 
-  const toggle = async () => {
-    if (!audioRef.current) return;
-    ensureAudio();
+  const toggle = async (it: Generation) => {
+    const a = audioRef.current; if (!a) return;
+    ensureCtx();
     if (ctxRef.current?.state === "suspended") await ctxRef.current.resume();
-    if (playing) audioRef.current.pause();
-    else await audioRef.current.play().catch(() => {});
-    setPlaying(!playing);
+    if (current === it.id && playing) { a.pause(); setPlaying(false); return; }
+    if (current !== it.id) { a.src = it.src; setCurrent(it.id); setProgress(0); }
+    await a.play().catch(() => {});
+    setPlaying(true);
   };
-
-  const handleTimeUpdate = () => {
-    if (!audioRef.current) return;
-    setCurrentTime(audioRef.current.currentTime);
-    setProgress((audioRef.current.currentTime / (audioRef.current.duration || 1)) * 100);
-  };
-
-  const handleEnded = () => { setPlaying(false); setProgress(0); setCurrentTime(0); };
 
   const seek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!audioRef.current) return;
-    const t = (parseFloat(e.target.value) / 100) * (audioRef.current.duration || 0);
-    audioRef.current.currentTime = t;
+    const a = audioRef.current; if (!a) return;
+    a.currentTime = (parseFloat(e.target.value) / 100) * (a.duration || 0);
     setProgress(parseFloat(e.target.value));
   };
 
-  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
-
-  const download = () => {
-    const a = document.createElement("a");
-    a.href = result.src;
-    a.download = `kyma-${Date.now()}.wav`;
-    a.click();
+  const download = (it: Generation) => {
+    const x = document.createElement("a"); x.href = it.src; x.download = `kyma-${it.id}.wav`; x.click();
   };
 
   return (
-    <div className="glass rounded-xl p-4 fade-up space-y-3">
-      <audio ref={audioRef} src={result.src} onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} />
+    <div className="glass rounded-xl p-4 space-y-3">
+      <VoiceOrb analyser={analyser} playing={playing} height={170} />
 
-      <VoiceOrb analyser={analyser} playing={playing} height={184} />
-
-      <div className="flex items-center gap-3">
-        <button
-          onClick={toggle}
-          className="w-11 h-11 rounded-full btn-accent flex items-center justify-center flex-shrink-0"
-          aria-label={playing ? "Pausar" : "Reproducir"}
-        >
-          {playing ? (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" />
-            </svg>
-          ) : (
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="5,3 19,12 5,21" />
-            </svg>
-          )}
-        </button>
+      {current && items.length > 0 && (
         <input
           type="range" min="0" max="100" value={progress} onChange={seek}
-          className="seek-bar flex-1"
+          className="seek-bar w-full"
           style={{ background: `linear-gradient(to right, var(--accent-from) ${progress}%, var(--c-track) ${progress}%)` }}
         />
-        <div className="text-xs text-muted font-mono flex-shrink-0">
-          {fmt(currentTime)} / {fmt(duration)}
-        </div>
-      </div>
+      )}
 
-      <div className="flex items-center justify-between text-xs text-muted">
-        <div className="flex gap-3">
-          {!result.isReal && (
-            <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
-              demo · sin GPU
-            </span>
-          )}
-          {result.commercial === false ? (
-            <span className="px-2 py-0.5 rounded-full" style={{ background: "var(--accent-soft)", color: "var(--accent-solid)" }} title="El audio del plan gratuito lleva una marca de agua inaudible — solo uso personal. Pasá a un plan pago para uso comercial sin marca.">Uso personal · con marca</span>
-          ) : result.commercial === true ? (
-            <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20" title="Audio limpio · uso comercial habilitado.">Comercial ✓</span>
-          ) : null}
-          <span>RTF {result.rtf.toFixed(3)}</span>
-          <span>{result.provider}</span>
+      {loading && (
+        <div className="flex items-center justify-center gap-2 text-xs text-muted">
+          <span className="w-2.5 h-2.5 rounded-full pulse-ring" style={{ background: "var(--accent-grad)" }} /> Generando…
         </div>
-        <div className="flex gap-2">
-          <button onClick={download} className="px-3 py-1 glass glass-hover rounded-lg text-xs" title="Descargar WAV">↓ WAV</button>
-          <button onClick={onNew} className="px-3 py-1 glass glass-hover rounded-lg text-xs">Nueva generación</button>
+      )}
+
+      {items.length === 0 && !loading ? (
+        <p className="text-muted text-sm text-center" style={{ marginTop: -2 }}>Generá una voz — aparece acá y se suma al historial (más nuevo arriba).</p>
+      ) : items.length > 0 ? (
+        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+          {items.map((it) => {
+            const active = current === it.id;
+            return (
+              <div key={it.id} className={`flex items-center gap-2.5 glass rounded-xl p-2.5 ${active ? "ring-accent" : "glass-hover"}`}>
+                <button onClick={() => toggle(it)} className="flex-shrink-0 w-9 h-9 rounded-full btn-accent flex items-center justify-center" aria-label={active && playing ? "Pausar" : "Reproducir"}>
+                  {active && playing ? (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
+                  ) : (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21" /></svg>
+                  )}
+                </button>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm truncate">{it.text || "—"}</p>
+                  <p className="text-[11px] text-muted truncate">
+                    {(it.durationMs / 1000).toFixed(1)}s · {it.langLabel}
+                    {it.commercial === false ? " · con marca" : it.commercial === true ? " · comercial" : ""}
+                    {!it.isReal ? " · demo" : ""}
+                  </p>
+                </div>
+                <button onClick={() => download(it)} className="flex-shrink-0 text-muted hover:text-white px-2" title="Descargar WAV">↓</button>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      ) : null}
+
+      {items[0] && <ShareCard audioSrc={items[0].src} text={items[0].text} language={items[0].langLabel} mode={items[0].mode} />}
     </div>
   );
 }
@@ -681,7 +679,7 @@ export default function Studio() {
   const [quality, setQuality] = useState<Quality>("balanced");
   const [seed, setSeed] = useState("");
   const [genState, setGenState] = useState<GenState>("idle");
-  const [result, setResult] = useState<AudioResult | null>(null);
+  const [results, setResults] = useState<Generation[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [cloneConsent, setCloneConsent] = useState(false);
@@ -749,7 +747,6 @@ export default function Studio() {
 
     // ── Consentimiento obligatorio para clonar (anti-abuso / legal) ──────────
     if (usingClone && !cloneConsent) {
-      setResult(null);
       setError("Para clonar una voz tenés que confirmar que es tuya o que tenés permiso para usarla.");
       setErrorCode("consent_required");
       setGenState("error");
@@ -757,7 +754,6 @@ export default function Studio() {
     }
 
     setGenState("loading");
-    setResult(null);
     setError(null);
     setErrorCode(null);
 
@@ -788,14 +784,19 @@ export default function Studio() {
         setGenState("error");
         return;
       }
-      setResult({
+      const gen: Generation = {
+        id: `${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
         src: b64ToDataUrl(data.audioBase64, data.mime),
         durationMs: data.durationMs,
         rtf: data.rtf,
         provider: data.provider,
         isReal: data.isReal,
         commercial: data.commercial,
-      });
+        text: text.trim().slice(0, 90),
+        langLabel: selectedLang.label,
+        mode: usingClone ? "clone" : "design",
+      };
+      setResults((prev) => [gen, ...prev]);
       setGenState("done");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error desconocido");
@@ -978,13 +979,8 @@ export default function Studio() {
             </div>
           </div>
 
-          {/* Etapa · orb + resultado */}
-          {result ? (
-            <>
-              <AudioPlayer result={result} onNew={() => { setResult(null); setGenState("idle"); }} />
-              <ShareCard audioSrc={result.src} text={text} language={selectedLang.label} mode={tab} />
-            </>
-          ) : error ? (
+          {/* Etapa · orb + historial de generaciones (más nuevo arriba) */}
+          {error && (
             <div className="glass rounded-xl p-5 fade-up border border-red-500/20 space-y-3">
               <p className="text-red-400 text-sm font-medium">
                 {errorCode === "credits_exhausted" ? "Te quedaste sin caracteres" : "⚠ Error"}
@@ -1003,16 +999,12 @@ export default function Studio() {
                   onClick={() => { setError(null); setErrorCode(null); setGenState("idle"); }}
                   className="text-xs text-red-400 underline hover:text-red-300 transition-colors"
                 >
-                  Reintentar
+                  Cerrar
                 </button>
               )}
             </div>
-          ) : (
-            <div className="glass rounded-xl p-4 flex flex-col items-center justify-center text-center">
-              <VoiceOrb analyser={null} playing={false} height={184} />
-              <p className="text-muted text-sm" style={{ marginTop: -6 }}>Generá una voz para escucharla acá</p>
-            </div>
           )}
+          <GenerationStage items={results} loading={genState === "loading"} />
 
           {/* Ajustes de generación (colapsado) */}
           <details className="glass rounded-xl p-4 group">
