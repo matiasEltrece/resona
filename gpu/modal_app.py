@@ -41,26 +41,45 @@ image = (
 
 app = modal.App("kyma", image=image)
 
-# Masterizado de audio con ffmpeg (mismo pipeline que la biblioteca).
-_FILTER = (
-    "highpass=f=70,"
-    "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05:detection=peak,areverse,"
-    "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05:detection=peak,areverse,"
-    "loudnorm=I=-16:TP=-1.5:LRA=11"
-)
+# Masterizado de VOZ con la cadena probada (skill macro-audio): highpass + compresor + loudnorm 2 pasadas.
+_VO_EQ = "highpass=f=85,acompressor=threshold=-20dB:ratio=2:attack=5:release=150"
 
 
 def _master_wav(wav_bytes: bytes, sample_rate: int) -> bytes:
-    """Masteriza el WAV (highpass + recorte de silencios + loudnorm -16 LUFS).
-    Si ffmpeg falla por lo que sea, devuelve el audio original — nunca rompe la generación."""
+    """Masteriza una locución: EQ/compresor + loudnorm de 2 pasadas (mide → aplica linear, preserva
+    dinámica) a I=-16 / TP=-1.5. Si algo falla, devuelve el audio original — nunca rompe."""
+    import json
+    import re
     try:
-        p = subprocess.run(
-            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", "pipe:0",
-             "-af", _FILTER, "-ar", str(sample_rate), "-ac", "1", "-sample_fmt", "s16", "-f", "wav", "pipe:1"],
-            input=wav_bytes, capture_output=True, timeout=30,
-        )
-        if p.returncode == 0 and len(p.stdout) > 44:
-            return p.stdout
+        with tempfile.TemporaryDirectory() as td:
+            src = os.path.join(td, "in.wav")
+            dst = os.path.join(td, "out.wav")
+            with open(src, "wb") as f:
+                f.write(wav_bytes)
+            # pass 1: medir loudness con la EQ ya aplicada
+            p1 = subprocess.run(
+                ["ffmpeg", "-hide_banner", "-nostats", "-i", src,
+                 "-af", _VO_EQ + ",loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
+                capture_output=True, text=True, timeout=60,
+            )
+            m = re.search(r'\{[^{}]*"input_i"[^{}]*\}', p1.stderr.replace("\n", " "))
+            meas = json.loads(m.group(0)) if m else {}
+            ln = "loudnorm=I=-16:TP=-1.5:LRA=11"
+            if all(k in meas for k in ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset")):
+                ln += (f":measured_I={meas['input_i']}:measured_TP={meas['input_tp']}"
+                       f":measured_LRA={meas['input_lra']}:measured_thresh={meas['input_thresh']}"
+                       f":offset={meas['target_offset']}:linear=true")
+            # pass 2: aplicar
+            p2 = subprocess.run(
+                ["ffmpeg", "-hide_banner", "-nostats", "-y", "-i", src,
+                 "-af", _VO_EQ + "," + ln, "-ar", str(sample_rate), "-c:a", "pcm_s16le", dst],
+                capture_output=True, timeout=60,
+            )
+            if p2.returncode == 0 and os.path.exists(dst):
+                with open(dst, "rb") as f:
+                    out = f.read()
+                if len(out) > 44:
+                    return out
     except Exception:
         pass
     return wav_bytes
@@ -251,3 +270,19 @@ def generate(request: dict) -> dict:
     """
     model = OmniVoiceModel()
     return model.generate.remote(request)
+
+
+@app.function()
+@modal.fastapi_endpoint(method="POST")
+def master(request: dict) -> dict:
+    """POST / — masteriza un WAV de voz (EQ + compresor + loudnorm 2 pasadas, -16 LUFS / TP -1.5).
+    { "audio_base64": "<base64 WAV>" } → { "audio_base64", "mime" }. Corre en CPU (no usa la GPU)."""
+    b64 = request.get("audio_base64")
+    if not b64:
+        return {"error": "Falta audio_base64"}
+    try:
+        wav = base64.b64decode(b64)
+    except Exception:
+        return {"error": "audio_base64 inválido"}
+    out = _master_wav(wav, SAMPLE_RATE)
+    return {"audio_base64": base64.b64encode(out).decode(), "mime": "audio/wav"}

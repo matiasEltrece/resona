@@ -44,6 +44,10 @@ function GenerationStage({ items, loading }: { items: Generation[]; loading: boo
   const [current, setCurrent] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [mastered, setMastered] = useState<Record<string, string>>({});
+  const [mastering, setMastering] = useState<string | null>(null);
+  const [masterErr, setMasterErr] = useState<string | null>(null);
+  const srcOf = (it: Generation) => mastered[it.id] ?? it.src;
 
   useEffect(() => {
     if (!audioRef.current) audioRef.current = new Audio();
@@ -73,7 +77,7 @@ function GenerationStage({ items, loading }: { items: Generation[]; loading: boo
     ensureCtx();
     if (ctxRef.current?.state === "suspended") await ctxRef.current.resume();
     if (current === it.id && playing) { a.pause(); setPlaying(false); return; }
-    if (current !== it.id) { a.src = it.src; setCurrent(it.id); setProgress(0); }
+    if (current !== it.id) { a.src = srcOf(it); setCurrent(it.id); setProgress(0); }
     await a.play().catch(() => {});
     setPlaying(true);
   };
@@ -85,7 +89,22 @@ function GenerationStage({ items, loading }: { items: Generation[]; loading: boo
   };
 
   const download = (it: Generation) => {
-    const x = document.createElement("a"); x.href = it.src; x.download = `kyma-${it.id}.wav`; x.click();
+    const x = document.createElement("a"); x.href = srcOf(it); x.download = `kyma-${it.id}.wav`; x.click();
+  };
+
+  const doMaster = async (it: Generation) => {
+    if (mastered[it.id] || mastering) return;
+    setMastering(it.id); setMasterErr(null);
+    try {
+      const res = await fetch("/api/master", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audioBase64: it.src.split(",")[1] }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setMasterErr(data.code === "plan_required" ? "Masterizar es de planes pagos." : (data.error ?? "No se pudo masterizar")); return; }
+      setMastered((m) => ({ ...m, [it.id]: `data:${data.mime ?? "audio/wav"};base64,${data.audioBase64}` }));
+    } catch { setMasterErr("No se pudo masterizar (red/timeout)."); }
+    finally { setMastering(null); }
   };
 
   return (
@@ -129,6 +148,14 @@ function GenerationStage({ items, loading }: { items: Generation[]; loading: boo
                     {!it.isReal ? " · demo" : ""}
                   </p>
                 </div>
+                <button
+                  onClick={() => doMaster(it)} disabled={mastering === it.id || !!mastered[it.id]}
+                  className="flex-shrink-0 text-[11px] px-2 py-1 rounded-lg transition-all"
+                  style={mastered[it.id] ? { background: "var(--accent-soft)", color: "var(--accent-solid)" } : { color: "var(--c-text-2)" }}
+                  title="Masterizar (planes pagos) · EQ + loudness -16 LUFS"
+                >
+                  {mastered[it.id] ? "✦ máster" : mastering === it.id ? "…" : "✦ máster"}
+                </button>
                 <button onClick={() => download(it)} className="flex-shrink-0 text-muted hover:text-white px-2" title="Descargar WAV">↓</button>
               </div>
             );
@@ -136,7 +163,8 @@ function GenerationStage({ items, loading }: { items: Generation[]; loading: boo
         </div>
       ) : null}
 
-      {items[0] && <ShareCard audioSrc={items[0].src} text={items[0].text} language={items[0].langLabel} mode={items[0].mode} />}
+      {masterErr && <p className="text-[11px] text-red-400 text-center">{masterErr}</p>}
+      {items[0] && <ShareCard audioSrc={srcOf(items[0])} text={items[0].text} language={items[0].langLabel} mode={items[0].mode} />}
     </div>
   );
 }
