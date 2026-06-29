@@ -42,6 +42,19 @@ const STATS = [
   { v: "10k", l: "Caracteres gratis / mes" },
 ];
 
+const CAPABILITIES: { t: string; d: string; href: string; soon?: boolean }[] = [
+  { t: "Texto a voz", d: "Convertí cualquier texto en voz natural, al instante.", href: "/studio" },
+  { t: "Locución · Voiceover", d: "Narraciones para videos, anuncios y cursos.", href: "/studio" },
+  { t: "Audiolibros · Text-to-MP3", d: "Libros y artículos largos convertidos a audio.", href: "/studio" },
+  { t: "Lector de voz", d: "Pegá un texto y escuchalo con voz humana.", href: "/studio" },
+  { t: "Clonación de voz", d: "Tu voz con 10s de audio, en 646 idiomas.", href: "/studio" },
+  { t: "Diseño de voz", d: "Creá una voz desde cero ajustando atributos.", href: "/studio" },
+  { t: "Doblaje IA", d: "Tu video en otro idioma, con tu propia voz.", href: "/studio", soon: true },
+  { t: "API de voz", d: "Generá voz desde tu producto con una REST API.", href: "/docs" },
+];
+
+const SOLUTIONS = ["Creadores de contenido", "E-learning y cursos", "Podcasts", "Marketing y anuncios", "Accesibilidad", "Atención al cliente"];
+
 export default function LandingPremium({
   isAuthed = false,
   creatorUrl,
@@ -284,6 +297,7 @@ export default function LandingPremium({
         .kyma-premium .kp-row{transition:background .15s ease}
         .kyma-premium .kp-row:hover{background:var(--c-surface-2)}
         @media(max-width:980px){.kyma-premium .kp-hero{grid-template-columns:1fr!important}.kyma-premium .kp-3{grid-template-columns:1fr!important}.kyma-premium .kp-4{grid-template-columns:repeat(2,1fr)!important}}
+        @media(max-width:860px){.kyma-premium .kp-foot{grid-template-columns:1fr 1fr!important}}@media(max-width:520px){.kyma-premium .kp-foot{grid-template-columns:1fr!important}}
       `}</style>
 
       <audio ref={audioRef} preload="none" crossOrigin="anonymous" />
@@ -300,6 +314,7 @@ export default function LandingPremium({
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 26 }} className="kp-navlinks">
             <a className="kp-nav" href="#features">Producto</a>
+            <a className="kp-nav" href="#capacidades">Capacidades</a>
             <a className="kp-nav" href="#steps">Cómo funciona</a>
             <a className="kp-nav" href="#pricing">Precios</a>
           </div>
@@ -451,6 +466,25 @@ export default function LandingPremium({
         </div>
       </section>
 
+      {/* ── CAPACIDADES (catálogo · Fase A) ── */}
+      <section id="capacidades" style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 32px 30px" }}>
+        <Eyebrow>Capacidades</Eyebrow>
+        <h2 style={{ fontSize: "clamp(30px,3.6vw,44px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 8 }}>Todo lo que generás, <span style={gold}>en 646 idiomas</span></h2>
+        <p style={{ color: "var(--c-text-2)", marginBottom: 26, fontSize: 16, maxWidth: 660, lineHeight: 1.6 }}>Pensado para el <strong style={{ color: "var(--c-text)" }}>español y LatAm</strong> — donde otros suenan robóticos — y además en más de 600 idiomas.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(238px,1fr))", gap: 14 }}>
+          {CAPABILITIES.map((c) => (
+            <a key={c.t} href={c.href} className="kp-card-h" style={{ ...card, padding: 18, textDecoration: "none", display: "block", color: "var(--c-text)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: 99, background: "var(--accent-grad)" }} />
+                <h3 style={{ fontSize: 15, fontWeight: 700 }}>{c.t}</h3>
+                {c.soon && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: "var(--accent-soft)", color: "var(--accent-solid)" }}>pronto</span>}
+              </div>
+              <p style={{ fontSize: 13, color: "var(--c-text-2)", lineHeight: 1.5 }}>{c.d}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+
       {/* ── STEPS ── */}
       <section id="steps" style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 32px 30px" }}>
         <Eyebrow>Cómo funciona</Eyebrow>
@@ -523,23 +557,39 @@ export default function LandingPremium({
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
+      {/* ── FOOTER (multi-columna · Fase A) ── */}
       <footer style={{ borderTop: "1px solid var(--c-border)" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "26px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--c-text-3)" }}>
-            <div style={{ width: 24, height: 24, borderRadius: 7, background: "var(--accent-grad)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="13" height="13" viewBox="0 0 24 24"><g stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><line x1="6" y1="9" x2="6" y2="15" /><line x1="12" y1="5" x2="12" y2="19" /><line x1="18" y1="8" x2="18" y2="16" /></g></svg>
+        <div className="kp-foot" style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 32px 28px", display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr", gap: 32 }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--accent-grad)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24"><g stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><line x1="6" y1="9" x2="6" y2="15" /><line x1="12" y1="5" x2="12" y2="19" /><line x1="18" y1="8" x2="18" y2="16" /></g></svg>
+              </div>
+              <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-head)" }}>Kyma</span>
             </div>
-            <strong style={{ color: "var(--c-text-2)" }}>Kyma</strong> · © 2026 · kyma.synthetic.com.ar
+            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 12, maxWidth: 240, lineHeight: 1.55 }}>Voz con IA pensada para el español — y 646 idiomas más. Cloná, diseñá y generá en segundos.</p>
           </div>
-          <div style={{ display: "flex", gap: 22 }}>
-            <a className="kp-nav" href="#pricing">Precios</a>
-            <a className="kp-nav" href="/terminos">Términos</a>
-            <a className="kp-nav" href="/privacidad">Privacidad</a>
-            <a className="kp-nav" href="/docs">API</a>
-          </div>
+          <FootCol title="Capacidades" links={CAPABILITIES.map((c) => [c.t, c.href] as [string, string])} />
+          <FootCol title="Soluciones" links={SOLUTIONS.map((s) => [s, "#capacidades"] as [string, string])} />
+          <FootCol title="Recursos" links={[["Studio", "/studio"], ["Documentación", "/docs"], ["API", "/docs"], ["Precios", "#pricing"], ["Términos", "/terminos"], ["Privacidad", "/privacidad"]]} />
+        </div>
+        <div style={{ borderTop: "1px solid var(--c-border)" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 32px", fontSize: 12, color: "var(--c-text-3)" }}>© 2026 Kyma · kyma.synthetic.com.ar · powered by Synthetic</div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function FootCol({ title, links }: { title: string; links: [string, string][] }) {
+  return (
+    <div>
+      <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.16em", color: "var(--c-text-3)", marginBottom: 12, fontWeight: 600 }}>{title}</p>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        {links.map(([label, href]) => (
+          <li key={label}><a className="kp-nav" href={href} style={{ fontSize: 13.5 }}>{label}</a></li>
+        ))}
+      </ul>
     </div>
   );
 }
