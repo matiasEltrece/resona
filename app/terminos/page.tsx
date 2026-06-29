@@ -34,8 +34,8 @@ export default function TerminosPage() {
           <p>El acceso requiere registro con email y contraseña. Ofrecemos un plan gratuito con un límite mensual de caracteres y planes pagos con mayor capacidad. Los límites y precios pueden cambiar con aviso previo.</p>
         </section>
         <section>
-          <h2 style={h2}>5. Propiedad del contenido generado</h2>
-          <p>El audio que generás es tuyo para usar según los términos de tu plan, incluido uso comercial. El motor de IA subyacente (OmniVoice) se distribuye bajo licencia Apache-2.0.</p>
+          <h2 style={h2}>5. Propiedad del contenido y uso comercial</h2>
+          <p>El audio que generás es tuyo. El <strong>uso comercial está habilitado en los planes pagos</strong> (Creator y Pro), que entregan el audio limpio. El audio del <strong>plan gratuito</strong> lleva una <strong>marca de agua inaudible</strong> y es para uso personal o de evaluación, no comercial. El motor de IA subyacente (OmniVoice) se distribuye bajo licencia Apache-2.0.</p>
         </section>
         <section>
           <h2 style={h2}>6. Limitación de responsabilidad</h2>

@@ -21,6 +21,7 @@ interface AudioResult {
   rtf: number;
   provider: string;
   isReal: boolean;
+  commercial?: boolean;
 }
 
 /* ─── utilidades ──────────────────────────────────────────────────────────── */
@@ -125,6 +126,11 @@ function AudioPlayer({ result, onNew }: { result: AudioResult; onNew: () => void
               demo · sin GPU
             </span>
           )}
+          {result.commercial === false ? (
+            <span className="px-2 py-0.5 rounded-full" style={{ background: "var(--accent-soft)", color: "var(--accent-solid)" }} title="El audio del plan gratuito lleva una marca de agua inaudible — solo uso personal. Pasá a un plan pago para uso comercial sin marca.">Uso personal · con marca</span>
+          ) : result.commercial === true ? (
+            <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20" title="Audio limpio · uso comercial habilitado.">Comercial ✓</span>
+          ) : null}
           <span>RTF {result.rtf.toFixed(3)}</span>
           <span>{result.provider}</span>
         </div>
@@ -788,6 +794,7 @@ export default function Studio() {
         rtf: data.rtf,
         provider: data.provider,
         isReal: data.isReal,
+        commercial: data.commercial,
       });
       setGenState("done");
     } catch (e) {

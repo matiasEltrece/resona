@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getProvider } from "@/lib/inference";
 import type { GenerateRequest } from "@/lib/inference";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { applyInaudibleWatermark } from "@/lib/watermark";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -42,10 +43,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  let isFreePlan = true;
   if (user) {
     const now = new Date();
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const service = await createServiceClient();
+
+    const { data: prof } = await service.from("kyma_profiles").select("plan").eq("id", user.id).single();
+    const plan = (prof as { plan?: string } | null)?.plan ?? "free";
+    isFreePlan = !["creator", "pro", "admin"].includes(plan);
 
     const { data: credit } = await service.rpc("kyma_consume_credit", {
       p_user_id: user.id,
@@ -77,7 +83,7 @@ export async function POST(req: NextRequest) {
       .eq("id", body.savedVoiceId)
       .single();
 
-    if (voice && voice.user_id === user.id) {
+    if (voice && voice.user_id === user.id && voice.storage_path) {
       const { data: file } = await service.storage
         .from("kyma-voices")
         .download(voice.storage_path);
@@ -123,7 +129,8 @@ export async function POST(req: NextRequest) {
       }).then(() => {});
     }
 
-    return NextResponse.json({ ...result, latencyMs: Date.now() - startedAt });
+    const audioBase64 = isFreePlan ? applyInaudibleWatermark(result.audioBase64) : result.audioBase64;
+    return NextResponse.json({ ...result, audioBase64, commercial: !isFreePlan, latencyMs: Date.now() - startedAt });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error desconocido";
     return NextResponse.json({ error: message }, { status: 500 });
