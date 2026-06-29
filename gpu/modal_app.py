@@ -219,7 +219,8 @@ class OmniVoiceModel:
         buf = io.BytesIO()
         sf.write(buf, audio_array, SAMPLE_RATE, format="WAV", subtype="PCM_16")
         wav_bytes = buf.getvalue()
-        wav_bytes = _master_wav(wav_bytes, SAMPLE_RATE)
+        # El masterizado NO es automático (es una acción opt-in que descuenta créditos).
+        # _master_wav() queda disponible para el endpoint de masterizado on-demand.
 
         return {
             "audio_base64": base64.b64encode(wav_bytes).decode(),
