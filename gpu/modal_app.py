@@ -21,6 +21,7 @@ OMNIVOICE_ENDPOINT=https://<workspace>--kyma-generate.modal.run
 import base64
 import io
 import os
+import subprocess
 import tempfile
 import time
 
@@ -29,6 +30,7 @@ import modal
 # ─── Imagen Docker ────────────────────────────────────────────────────────
 image = (
     modal.Image.debian_slim(python_version="3.11")
+    .apt_install("ffmpeg")
     .pip_install(
         "torch==2.4.0",
         "torchaudio==2.4.0",
@@ -38,6 +40,30 @@ image = (
 )
 
 app = modal.App("kyma", image=image)
+
+# Masterizado de audio con ffmpeg (mismo pipeline que la biblioteca).
+_FILTER = (
+    "highpass=f=70,"
+    "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05:detection=peak,areverse,"
+    "silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.05:detection=peak,areverse,"
+    "loudnorm=I=-16:TP=-1.5:LRA=11"
+)
+
+
+def _master_wav(wav_bytes: bytes, sample_rate: int) -> bytes:
+    """Masteriza el WAV (highpass + recorte de silencios + loudnorm -16 LUFS).
+    Si ffmpeg falla por lo que sea, devuelve el audio original — nunca rompe la generación."""
+    try:
+        p = subprocess.run(
+            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", "pipe:0",
+             "-af", _FILTER, "-ar", str(sample_rate), "-ac", "1", "-sample_fmt", "s16", "-f", "wav", "pipe:1"],
+            input=wav_bytes, capture_output=True, timeout=30,
+        )
+        if p.returncode == 0 and len(p.stdout) > 44:
+            return p.stdout
+    except Exception:
+        pass
+    return wav_bytes
 model_cache = modal.Volume.from_name("kyma-model-cache", create_if_missing=True)
 
 SAMPLE_RATE = 24000  # OmniVoice genera a 24 kHz
@@ -193,6 +219,7 @@ class OmniVoiceModel:
         buf = io.BytesIO()
         sf.write(buf, audio_array, SAMPLE_RATE, format="WAV", subtype="PCM_16")
         wav_bytes = buf.getvalue()
+        wav_bytes = _master_wav(wav_bytes, SAMPLE_RATE)
 
         return {
             "audio_base64": base64.b64encode(wav_bytes).decode(),
