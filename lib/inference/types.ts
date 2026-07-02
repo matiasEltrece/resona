@@ -88,6 +88,8 @@ export interface GenerateResult {
   provider: string;
   /** true si vino de un modelo real; false si es placeholder local */
   isReal: boolean;
+  /** true si el audio quedó sin marca de agua (plan pago). Lo agrega la ruta, no el provider. */
+  commercial?: boolean;
 }
 
 export interface InferenceProvider {

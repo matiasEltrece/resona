@@ -18,9 +18,12 @@ export default function ApiKeysClient({ initialKeys }: { initialKeys: ApiKey[] }
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const createKey = async () => {
     setCreating(true);
+    setError(null);
     try {
       const res = await fetch("/api/keys", {
         method: "POST",
@@ -32,15 +35,31 @@ export default function ApiKeysClient({ initialKeys }: { initialKeys: ApiKey[] }
         setNewKey(data.key);
         setKeys((k) => [{ ...data, revoked: false, last_used_at: null }, ...k]);
         setName("");
+      } else {
+        setError(data.error ?? "No se pudo crear la key. Probá de nuevo.");
       }
+    } catch {
+      setError("No se pudo crear la key (red/timeout). Probá de nuevo.");
     } finally {
       setCreating(false);
     }
   };
 
   const revoke = async (id: string) => {
-    await fetch(`/api/keys/${id}`, { method: "DELETE" });
-    setKeys((k) => k.filter((x) => x.id !== id));
+    setRevokingId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/keys/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setKeys((k) => k.filter((x) => x.id !== id));
+      } else {
+        setError("No se pudo revocar la key. Probá de nuevo — no la des por revocada.");
+      }
+    } catch {
+      setError("No se pudo revocar la key (red/timeout). No la des por revocada.");
+    } finally {
+      setRevokingId(null);
+    }
   };
 
   const copy = (text: string) => {
@@ -85,6 +104,12 @@ export default function ApiKeysClient({ initialKeys }: { initialKeys: ApiKey[] }
           </button>
         </div>
 
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+            <p className="text-xs text-red-400">{error}</p>
+          </div>
+        )}
+
         {newKey && (
           <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 space-y-2">
             <p className="text-xs text-green-400 font-medium">✓ Key creada — copiala ahora, no se vuelve a mostrar:</p>
@@ -115,7 +140,9 @@ export default function ApiKeysClient({ initialKeys }: { initialKeys: ApiKey[] }
                   <span className="text-xs text-muted">
                     {k.last_used_at ? `Usada ${new Date(k.last_used_at).toLocaleDateString()}` : "Sin usar"}
                   </span>
-                  <button onClick={() => revoke(k.id)} className="text-xs text-red-400 hover:text-red-300">Revocar</button>
+                  <button onClick={() => revoke(k.id)} disabled={revokingId === k.id} className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">
+                    {revokingId === k.id ? "Revocando…" : "Revocar"}
+                  </button>
                 </div>
               </div>
             ))}

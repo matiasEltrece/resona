@@ -104,7 +104,7 @@ create table if not exists public.kyma_credit_purchases (
   pack_id        text,
   chars          integer not null,
   amount_usd     numeric,
-  lemon_order_id text,
+  lemon_order_id text unique,
   created_at     timestamptz not null default now()
 );
 

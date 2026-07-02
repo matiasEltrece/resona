@@ -96,7 +96,7 @@ function GenerationStage({ items, loading }: { items: Generation[]; loading: boo
   };
 
   const doMaster = async (it: Generation) => {
-    if (mastered[it.id] || mastering) return;
+    if (mastered[it.id] || mastering === it.id) return;
     setMastering(it.id); setMasterErr(null);
     try {
       const res = await fetch("/api/master", {
@@ -131,7 +131,7 @@ function GenerationStage({ items, loading }: { items: Generation[]; loading: boo
       {items.length === 0 && !loading ? (
         <p className="text-muted text-sm text-center" style={{ marginTop: -2 }}>Generá una voz — aparece acá y se suma al historial (más nuevo arriba).</p>
       ) : items.length > 0 ? (
-        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+        <div className="space-y-2">
           {items.map((it) => {
             const active = current === it.id;
             return (
@@ -368,7 +368,7 @@ function VoiceGuide({ onRecipe }: { onRecipe: (d: VoiceDesign) => void }) {
     window.setTimeout(() => setApplied((a) => (a === label ? null : a)), 2600);
   };
   return (
-    <div className="glass rounded-xl p-4 space-y-3 text-xs max-h-[460px] overflow-y-auto">
+    <div className="glass rounded-xl p-4 space-y-3 text-xs">
       <p className="text-xs text-muted uppercase tracking-widest">Guía · qué voces podés crear</p>
       <p className="text-muted leading-relaxed">
         No hay una lista cerrada: <span className="text-gradient font-semibold">diseñás</span> la voz combinando
@@ -381,8 +381,8 @@ function VoiceGuide({ onRecipe }: { onRecipe: (d: VoiceDesign) => void }) {
         <GuideRow label="Estilo" items="Normal · Susurro (ASMR)" />
       </div>
       <p className="text-[11px] text-muted leading-relaxed">
-        + acentos del inglés (10) · dialectos del chino (12) · <strong className="text-white/80">cientos de idiomas</strong>.
-        Son <strong className="text-white/80">1000+ combinaciones</strong> — y la clonación es infinita.
+        + acentos del inglés (10) · dialectos del chino (12) · <strong className="text-white/80">multilenguaje</strong>.
+        Son <strong className="text-white/80">cientos de combinaciones</strong> — y la clonación es infinita.
       </p>
 
       <div>
@@ -480,8 +480,8 @@ function DesignPanel({
           <input
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
-            placeholder="Nombre (ej. «Voz de mi avatar»)"
-            className="flex-1 glass rounded-lg px-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted/50"
+            placeholder="Nombre de la voz"
+            className="flex-1 min-w-0 glass rounded-lg px-3 py-1.5 text-sm bg-transparent outline-none placeholder:text-muted/50"
           />
           <button onClick={save} disabled={saving || !saveName.trim()} className="btn-accent px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-50">
             {saving ? "Guardando…" : "Guardar"}

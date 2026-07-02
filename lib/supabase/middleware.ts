@@ -21,9 +21,12 @@ function checkBasicAuth(request: NextRequest): boolean {
 }
 
 export async function updateSession(request: NextRequest) {
-  // La API pública (/api/v1/*) y los webhooks no usan Basic Auth ni sesión.
+  // La API pública (/api/v1/*), los webhooks y los links de auth por email
+  // (confirmación/reset/cambio de email) no usan Basic Auth ni sesión —
+  // el usuario abre esos links desde su cliente de correo, en un navegador
+  // que no tiene las credenciales de la beta cacheadas.
   const p = request.nextUrl.pathname;
-  if (p.startsWith("/api/v1/") || p.startsWith("/api/webhooks/")) {
+  if (p.startsWith("/api/v1/") || p.startsWith("/api/webhooks/") || p.startsWith("/auth/")) {
     return NextResponse.next({ request });
   }
 
