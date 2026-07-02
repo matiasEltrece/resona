@@ -10,8 +10,11 @@ import type { GenerateRequest, VoiceDesign, Quality } from "@/lib/inference/type
 import ShareCard from "./ShareCard";
 import VoiceOrb from "./VoiceOrb";
 import voiceLibraryRaw from "@/lib/voice-library.json";
+import presetsRaw from "@/lib/presets.json";
 
 /* ─── tipos locales ──────────────────────────────────────────────────────── */
+type Preset = { id: string; name: string; country: string; flag: string; char: string; design: VoiceDesign; seed: number; src: string };
+const PRESETS = presetsRaw as unknown as Preset[];
 type Tab = "design" | "clone";
 type GenState = "idle" | "loading" | "done" | "error";
 
@@ -299,6 +302,45 @@ function VoiceGallery({ design, setDesign }: { design: VoiceDesign; setDesign: (
   );
 }
 
+/* Presets: voces curadas con SEMILLA FIJA. Tocar ▶ las escucha;
+   tocar el nombre aplica su design + seed → generar cualquier texto mantiene el timbre. */
+function PresetStrip({ presets, onApply }: { presets: Preset[]; onApply: (d: VoiceDesign, s: number) => void }) {
+  const [playing, setPlaying] = useState<string | null>(null);
+  // Sin presets con derechos confirmados → no mostramos nada (evita publicar voces dudosas).
+  if (!presets.length) return null;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => () => { audioRef.current?.pause(); }, []);
+  const preview = (e: React.MouseEvent, p: Preset) => {
+    e.stopPropagation();
+    if (!audioRef.current) audioRef.current = new Audio();
+    const a = audioRef.current;
+    if (playing === p.id) { a.pause(); setPlaying(null); return; }
+    a.src = p.src; a.currentTime = 0; a.play().catch(() => {});
+    a.onended = () => setPlaying(null);
+    setPlaying(p.id);
+  };
+  return (
+    <div>
+      <p className="text-xs text-muted mb-1.5 uppercase tracking-widest">Presets de voz · semilla fija</p>
+      <div className="flex flex-wrap gap-1.5">
+        {presets.map((p) => (
+          <span key={p.id} className="group flex items-center rounded-lg text-sm glass glass-hover">
+            <button onClick={(e) => preview(e, p)} aria-label={`Escuchar ${p.name}`} className="pl-2.5 pr-1 py-1.5" style={{ color: "var(--accent-solid)" }}>
+              {playing === p.id ? (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
+              ) : (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20" /></svg>
+              )}
+            </button>
+            <button onClick={() => onApply(p.design, p.seed)} className="pr-3 py-1.5 text-white" title={`Usar ${p.name} · ${p.country} · ${p.char}`}>{p.flag} {p.name}</button>
+          </span>
+        ))}
+      </div>
+      <p className="text-[10px] text-muted mt-1">Elegí una y generá cualquier texto: mantiene el mismo timbre (misma semilla).</p>
+    </div>
+  );
+}
+
 /* Panel-guía: enseña el sistema de diseño de voz (atributos + recetas) — la
    respuesta a "1000+ voces" sin listar mil. Las recetas aplican un diseño. */
 function GuideRow({ label, items }: { label: string; items: string }) {
@@ -339,7 +381,7 @@ function VoiceGuide({ onRecipe }: { onRecipe: (d: VoiceDesign) => void }) {
         <GuideRow label="Estilo" items="Normal · Susurro (ASMR)" />
       </div>
       <p className="text-[11px] text-muted leading-relaxed">
-        + acentos del inglés (10) · dialectos del chino (12) · <strong className="text-white/80">646 idiomas</strong>.
+        + acentos del inglés (10) · dialectos del chino (12) · <strong className="text-white/80">cientos de idiomas</strong>.
         Son <strong className="text-white/80">1000+ combinaciones</strong> — y la clonación es infinita.
       </p>
 
@@ -386,7 +428,7 @@ function VoiceGuide({ onRecipe }: { onRecipe: (d: VoiceDesign) => void }) {
 }
 
 function DesignPanel({
-  design, setDesign, lang, savedDesigns, onSaveDesign, onLoadDesign, onDeleteVoice,
+  design, setDesign, lang, savedDesigns, onSaveDesign, onLoadDesign, onDeleteVoice, onApplyPreset,
 }: {
   design: VoiceDesign;
   setDesign: (d: VoiceDesign) => void;
@@ -395,6 +437,7 @@ function DesignPanel({
   onSaveDesign: (name: string) => Promise<void> | void;
   onLoadDesign: (v: SavedVoice) => void;
   onDeleteVoice: (id: string) => void;
+  onApplyPreset: (d: VoiceDesign, s: number) => void;
 }) {
   const english = isEnglish(lang);
   const chinese = isChinese(lang);
@@ -414,6 +457,9 @@ function DesignPanel({
         <span className="text-[10px] text-muted uppercase tracking-widest">Voz actual</span>
         <span className="text-sm font-semibold text-gradient">{designSummary(design)}</span>
       </div>
+
+      {/* Presets latinos (semilla fija → timbre consistente) */}
+      <PresetStrip presets={PRESETS} onApply={onApplyPreset} />
 
       {/* Mis voces diseñadas (guardadas, reutilizables y consistentes) */}
       <div>
@@ -747,6 +793,12 @@ export default function Studio() {
     if (v.design) setDesign(v.design);
     setSeed(v.seed != null ? String(v.seed) : "");
   }, []);
+  // Aplica un preset latino: design + semilla fija → generar otro texto mantiene el timbre.
+  const applyPreset = useCallback((d: VoiceDesign, s: number) => {
+    setTab("design");
+    setDesign(d);
+    setSeed(String(s));
+  }, []);
   const deleteSavedVoice = useCallback(async (id: string) => {
     if (selectedVoiceId === id) setSelectedVoiceId(null);
     await fetch(`/api/voices/${id}`, { method: "DELETE" }).catch(() => {});
@@ -868,7 +920,7 @@ export default function Studio() {
         <div className="space-y-4 min-w-0">
           {/* Idioma */}
           <div className="glass rounded-xl p-4 space-y-2 relative z-30">
-            <p className="text-xs text-muted uppercase tracking-widest">Idioma <span className="opacity-50">· 646 disponibles</span></p>
+            <p className="text-xs text-muted uppercase tracking-widest">Idioma <span className="opacity-50">· multilenguaje</span></p>
             <div className="relative">
               <button
                 onClick={() => { setLangOpen(!langOpen); setLangQuery(""); }}
@@ -885,7 +937,7 @@ export default function Studio() {
                       autoFocus
                       value={langQuery}
                       onChange={(e) => setLangQuery(e.target.value)}
-                      placeholder="Buscar entre 646 idiomas…"
+                      placeholder="Buscar idioma…"
                       className="w-full bg-transparent outline-none text-sm placeholder:text-muted/50"
                     />
                   </div>
@@ -926,7 +978,8 @@ export default function Studio() {
             </p>
             {tab === "design" ? (
               <DesignPanel design={design} setDesign={setDesign} lang={lang}
-                savedDesigns={savedDesigns} onSaveDesign={saveDesignVoice} onLoadDesign={loadDesignVoice} onDeleteVoice={deleteSavedVoice} />
+                savedDesigns={savedDesigns} onSaveDesign={saveDesignVoice} onLoadDesign={loadDesignVoice} onDeleteVoice={deleteSavedVoice}
+                onApplyPreset={applyPreset} />
             ) : (
               <>
                 <ClonePanel

@@ -48,3 +48,7 @@ __pycache__/
 
 # Documentación de venta/transferencia — PRIVADO, solo admin. NUNCA commitear.
 _private/
+
+# token local de setup (no subir)
+.omnivoice-token.local
+supabase/.temp/

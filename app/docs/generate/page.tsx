@@ -49,7 +49,7 @@ export default function GenerateRef() {
           <h2 style={h2}>Body (JSON)</h2>
           <Table>
             <Row k="text" v="Texto a generar (máx 5000 chars). Soporta tags como [laughter]. Requerido." />
-            <Row k="language" v='Código ISO ("es", "en", "ja"…) o nombre. 646 idiomas. Default "es".' />
+            <Row k="language" v='Código ISO ("es", "en", "ja"…) o nombre. Multilenguaje. Default "es".' />
             <Row k="mode" v='"design" (diseñar voz) o "clone" (clonar). Default "design".' />
             <Row k="design" v="Objeto con gender, age, pitch, whisper, accent, dialect (ver abajo)." />
             <Row k="referenceAudioBase64" v="Para mode=clone. Audio de referencia en base64 (WAV/MP3)." />
@@ -57,6 +57,7 @@ export default function GenerateRef() {
             <Row k="savedVoiceId" v="ID de una voz guardada tuya — alternativa al audio de referencia." />
             <Row k="consent" v="Obligatorio al clonar: true confirma que tenés permiso para usar la voz." />
             <Row k="speed" v="0.5 (lento) – 2.0 (rápido). Default 1.0." />
+            <Row k="durationSec" v="Duración fija de salida en segundos (opcional, anula speed)." />
             <Row k="quality" v='"fast" · "balanced" · "high". Default "balanced".' />
             <Row k="seed" v="Entero opcional para reproducibilidad." />
           </Table>

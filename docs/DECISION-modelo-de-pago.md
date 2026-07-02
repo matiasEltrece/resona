@@ -30,8 +30,14 @@ El costo real por generación es **~$0.001** (ver ROADMAP-costos-modal.md). Con 
 | Plan | Precio | Caracteres/mes | Costo GPU | Margen | API |
 |---|---|---|---|---|---|
 | **Free** | $0 | 10.000 | ~$0.03 | — | ❌ |
-| **Creator** | $12/mes | 200.000 | ~$0.60 | **95%** | ✅ |
-| **Pro** | $39/mes | 1.000.000 | ~$3 | **92%** | ✅ |
+| **Creator** | $12/mes | 200.000 | ~$0.60 | **95%** | ❌ |
+| **Pro** | $39/mes | 1.000.000 | ~$3 | **92%** | ✅ (exclusiva Pro) |
+
+> Decisión: la **API es exclusiva del plan Pro** (gateada en `app/api/v1/generate/route.ts` →
+> `plan !== "pro" && plan !== "admin"` ⇒ 403). Creator NO incluye API. Diferenciadores reales por plan:
+> caracteres/mes, marca de agua + uso comercial (Free lleva marca de agua inaudible y es uso personal;
+> Creator/Pro sin marca y comercial), masterizado (solo pagos) y API (solo Pro). Todo lo demás
+> (646 idiomas, <1s, diseño, clonación, voces guardadas) es igual en todos los planes.
 
 - **Costo:** ~$0.003 por cada 1.000 caracteres (GPU A10).
 - **Comparación:** ElevenLabs cobra $22 por 100k y $99 por 500k. Damos 2× o más por la mitad.

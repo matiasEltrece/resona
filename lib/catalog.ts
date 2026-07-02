@@ -136,7 +136,7 @@ export const VOICE_PRESETS: { id: string; name: string; desc: string; design: Vo
 ];
 
 export const SAMPLE_SCRIPTS = [
-  "Hola, soy una voz creada con inteligencia artificial. Puedo hablar en más de 600 idiomas.",
+  "Hola, soy una voz creada con inteligencia artificial. Puedo hablar en español, inglés, portugués y muchos idiomas más.",
   "Bienvenidos a un nuevo episodio. Hoy vamos a hablar de algo que va a cambiar la forma en que creás contenido. [laughter]",
   "This is my voice, cloned in seconds and speaking a language I never learned.",
 ];

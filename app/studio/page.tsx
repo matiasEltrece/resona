@@ -1,11 +1,10 @@
 import Studio from "@/components/Studio";
 import NavbarAuth from "@/components/NavbarAuth";
-import { brand } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import PremiumThemeRoot from "@/components/PremiumThemeRoot";
 
-export const metadata = { title: `Studio — ${brand.name}` };
+export const metadata = { title: "Kyma Studio" };
 
 export default async function StudioPage() {
   const supabase = await createClient();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { createServiceClient } from "@/lib/supabase/server";
+import { sendKymaEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -94,6 +95,11 @@ export async function POST(req: NextRequest) {
           subscription_ends_at: endsAt,
           ...(portal ? { lemon_customer_portal_url: portal } : {}),
         });
+        // Recibo branded solo al ACTIVAR por primera vez (no en renovaciones/updates)
+        if (event === "subscription_created") {
+          const email = (attrs.user_email as string | undefined) ?? "";
+          if (email) void sendKymaEmail("receipt", email, { kind: "plan", plan: plan?.id ?? "creator" });
+        }
         break;
       }
       case "subscription_cancelled":
@@ -135,6 +141,8 @@ export async function POST(req: NextRequest) {
                 p_amount: pack.price_usd,
                 p_order_id: orderId,
               });
+              const email = (attrs.user_email as string | undefined) ?? "";
+              if (email) void sendKymaEmail("receipt", email, { kind: "pack", chars: pack.chars, amount: pack.price_usd });
             }
           }
         }

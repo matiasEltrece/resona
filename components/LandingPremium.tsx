@@ -11,8 +11,9 @@ interface Voice {
   name: string; char: string; lang: string; flag: string; src: string;
   tone: number; energy: number; clarity: number;
 }
+// Muestras multilingües de demostración (voces de diseño, sin reclamo de superioridad por idioma).
 const VOICES: Voice[] = [
-  { name: "Aurora", char: "cálida",   lang: "ES-AR", flag: "🇦🇷", src: "/radio/aurora.wav", tone: 62, energy: 70, clarity: 88 },
+  { name: "Aurora", char: "cálida",   lang: "ES", flag: "🇪🇸", src: "/radio/aurora.wav", tone: 62, energy: 70, clarity: 88 },
   { name: "Atlas",  char: "profunda", lang: "EN-GB", flag: "🇬🇧", src: "/radio/atlas.wav",  tone: 38, energy: 55, clarity: 82 },
   { name: "Nova",   char: "enérgica", lang: "PT-BR", flag: "🇧🇷", src: "/radio/nova.wav",   tone: 74, energy: 90, clarity: 80 },
   { name: "Sora",   char: "suave",    lang: "JA",    flag: "🇯🇵", src: "/radio/sora.wav",   tone: 58, energy: 44, clarity: 86 },
@@ -21,39 +22,86 @@ const VOICES: Voice[] = [
 ];
 
 const FEATURES = [
-  { t: "Cloná tu voz", d: "Grabá 10 segundos de audio limpio y replicá tu voz en cualquiera de los 646 idiomas.", i: "mic" },
+  { t: "Cloná tu voz", d: "Grabá 10 segundos de audio limpio y replicá tu voz, en español y muchos idiomas más.", i: "mic" },
   { t: "Diseñá voces", d: "Ajustá tono, edad y carácter. Creá una identidad sonora desde cero, sin grabar nada.", i: "sliders" },
-  { t: "Generación <1s", d: "Latencia mínima. RTF 0.025 — hasta 40× más rápido que el tiempo real.", i: "time" },
-  { t: "646 idiomas", d: "Doblaje y traducción de voz que cruzan cualquier frontera, con tu propia voz.", i: "globe" },
+  { t: "Generación en segundos", d: "Latencia baja: generás tu audio en segundos, listo para descargar o integrar.", i: "time" },
+  { t: "Multilenguaje", d: "Español, inglés, portugués, francés, italiano, alemán, chino, japonés y muchos más.", i: "globe" },
   { t: "API REST", d: "Integrá Kyma en tu producto con un solo endpoint. Disponible en el plan Pro.", i: "code" },
   { t: "Métricas en vivo", d: "Caracteres, latencia y uso, monitoreados en tiempo real desde tu dashboard.", i: "metrics" },
 ];
 
 const STEPS = [
   { n: "01", t: "Subí o grabá", d: "Con 10 segundos de audio limpio alcanza para clonar tu voz. La transcribimos automáticamente." },
-  { n: "02", t: "Elegí el idioma", d: "646 opciones. Seleccioná el idioma destino y el carácter de la voz que querés generar." },
+  { n: "02", t: "Elegí el idioma", d: "Español y muchos idiomas más. Seleccioná el idioma destino y el carácter de la voz que querés generar." },
   { n: "03", t: "Generá y descargá", d: "En menos de un segundo tenés tu audio listo para usar, exportar o integrar por API." },
 ];
 
 const STATS = [
-  { v: "646", l: "Idiomas soportados" },
-  { v: "0.025", l: "RTF — factor de tiempo real" },
+  { v: "30+", l: "Idiomas de alta calidad" },
+  { v: "10s", l: "Para clonar tu voz" },
   { v: "<1s", l: "Generación de voz" },
   { v: "10k", l: "Caracteres gratis / mes" },
 ];
 
-const CAPABILITIES: { t: string; d: string; href: string; soon?: boolean }[] = [
-  { t: "Texto a voz", d: "Convertí cualquier texto en voz natural, al instante.", href: "/studio" },
-  { t: "Locución · Voiceover", d: "Narraciones para videos, anuncios y cursos.", href: "/studio" },
-  { t: "Audiolibros · Text-to-MP3", d: "Libros y artículos largos convertidos a audio.", href: "/studio" },
-  { t: "Lector de voz", d: "Pegá un texto y escuchalo con voz humana.", href: "/studio" },
-  { t: "Clonación de voz", d: "Tu voz con 10s de audio, en 646 idiomas.", href: "/studio" },
-  { t: "Diseño de voz", d: "Creá una voz desde cero ajustando atributos.", href: "/studio" },
-  { t: "Doblaje IA", d: "Tu video en otro idioma, con tu propia voz.", href: "/studio", soon: true },
-  { t: "API de voz", d: "Generá voz desde tu producto con una REST API.", href: "/docs" },
+/* Suite de productos "Kyma X" (patrón marca-paraguas, estilo Envato/Adobe):
+   cada producto repite el nombre madre. Las keywords SEO (texto a voz, voiceover,
+   audiolibros, lector, doblaje) van en la descripción para no perderlas. */
+const PRODUCTS: { t: string; d: string; href: string; soon?: boolean }[] = [
+  { t: "Kyma Studio", d: "Texto a voz para locución, voiceover y audiolibros, multilenguaje.", href: "/studio" },
+  { t: "Kyma Clone", d: "Cloná tu voz con 10 segundos de audio limpio.", href: "/studio" },
+  { t: "Kyma Design", d: "Diseñá una voz desde cero ajustando tono, edad y carácter.", href: "/studio" },
+  { t: "Kyma Reader", d: "Lector de voz: pegá un texto o artículo largo y escuchalo.", href: "/studio" },
+  { t: "Kyma Dubbing", d: "Doblaje IA: tu video en otro idioma, con tu propia voz.", href: "/studio", soon: true },
+  { t: "Kyma API", d: "Generá voz desde tu producto con una REST API (plan Pro).", href: "/docs" },
 ];
 
 const SOLUTIONS = ["Creadores de contenido", "E-learning y cursos", "Podcasts", "Marketing y anuncios", "Accesibilidad", "Atención al cliente"];
+
+/* Comparativa honesta. Valores de competidores son aproximados (planes de entrada, dato público
+   sujeto a cambios) — pensados para posicionamiento, no como dato contractual. */
+type Cell = { kyma: string | boolean; el: string | boolean; car: string | boolean };
+const COMPARE: { label: string; c: Cell; highlight?: boolean }[] = [
+  { label: "Idiomas soportados", c: { kyma: "Multilenguaje", el: "Decenas", car: "Decenas" }, highlight: true },
+  { label: "Precio · caracteres incluidos", c: { kyma: "$12 · 200k", el: "$22 · 100k", car: "$5 · 100k" } },
+  { label: "Clonación de voz (10s)", c: { kyma: true, el: true, car: true } },
+  { label: "Diseño de voz por atributos", c: { kyma: true, el: true, car: "Parcial" } },
+  { label: "API REST + docs", c: { kyma: true, el: true, car: true } },
+  { label: "Doblaje IA", c: { kyma: "Pronto", el: true, car: true } },
+];
+
+/* Matriz de planes en detalle (estilo Cartesia "Compare plans in detail"). */
+const PLAN_COLS = ["Gratis", "Creator", "Pro"] as const;
+type V = string | boolean;
+const MATRIX: { group: string; rows: { label: string; vals: [V, V, V] }[] }[] = [
+  { group: "Generación", rows: [
+    { label: "Caracteres / mes", vals: ["10.000", "200.000", "1.000.000"] },
+    { label: "Idiomas", vals: ["Multilenguaje", "Multilenguaje", "Multilenguaje"] },
+    { label: "Generación en <1s", vals: [true, true, true] },
+    { label: "Diseño de voz por atributos", vals: [true, true, true] },
+    { label: "Clonación de voz (10s)", vals: [true, true, true] },
+    { label: "Voces guardadas reutilizables", vals: [true, true, true] },
+  ] },
+  { group: "Uso y entrega", rows: [
+    { label: "Audios sin marca de agua", vals: [false, true, true] },
+    { label: "Licencia de uso comercial", vals: [false, true, true] },
+    { label: "Masterizado de audio (EQ + loudness)", vals: [false, true, true] },
+  ] },
+  { group: "API e integración", rows: [
+    { label: "API REST + documentación", vals: [false, false, true] },
+    { label: "Rate limit", vals: ["—", "—", "30 req/min"] },
+    { label: "Soporte", vals: ["Comunidad", "Email", "Prioritario"] },
+  ] },
+];
+
+const FAQS: { q: string; a: string }[] = [
+  { q: "¿Cómo funcionan los créditos?", a: "Es uno solo: cada plan incluye una cantidad de caracteres por mes (10.000 / 200.000 / 1.000.000) que se usan tanto en la web como en la API — el mismo pool para todo, sin créditos separados por función. Si necesitás más, podés sumar packs de caracteres extra que no vencen." },
+  { q: "¿Necesito tarjeta para el plan gratis?", a: "No. Tenés 10.000 caracteres por mes gratis, sin tarjeta ni compromiso." },
+  { q: "¿La clonación de voz es solo de pago?", a: "No: podés clonar tu voz en cualquier plan. En el plan Gratis los audios llevan una marca de agua inaudible y son para uso personal; desde Creator quedan sin marca y con licencia de uso comercial." },
+  { q: "¿Qué pasa si me paso de los caracteres incluidos?", a: "No se corta de golpe: podés subir de plan cuando quieras y te avisamos al acercarte al límite. El cupo mensual se renueva cada mes." },
+  { q: "¿La API en qué plan está?", a: "La API REST es exclusiva del plan Pro. Consume del mismo pool mensual de caracteres y tiene un límite de 30 requests por minuto por key." },
+  { q: "¿Qué es el masterizado y cuánto cuesta?", a: "Es un retoque opcional (EQ + loudness a -16 LUFS) que mejora la locución. Está incluido en los planes pagos (Creator y Pro), es opt-in —elegís qué audios masterizar— y no consume créditos aparte." },
+  { q: "¿Puedo cancelar cuando quiera?", a: "Sí, sin permanencia. Mantenés el plan hasta el final del período que ya pagaste." },
+];
 
 export default function LandingPremium({
   isAuthed = false,
@@ -298,6 +346,10 @@ export default function LandingPremium({
         .kyma-premium .kp-row:hover{background:var(--c-surface-2)}
         @media(max-width:980px){.kyma-premium .kp-hero{grid-template-columns:1fr!important}.kyma-premium .kp-3{grid-template-columns:1fr!important}.kyma-premium .kp-4{grid-template-columns:repeat(2,1fr)!important}}
         @media(max-width:860px){.kyma-premium .kp-foot{grid-template-columns:1fr 1fr!important}}@media(max-width:520px){.kyma-premium .kp-foot{grid-template-columns:1fr!important}}
+        .kyma-premium details>summary::-webkit-details-marker{display:none}
+        .kyma-premium details.kp-matrix[open] .kp-matrix-chevron{transform:rotate(180deg)}
+        .kyma-premium details.kp-faq[open] .kp-faq-plus{transform:rotate(45deg)}
+        .kyma-premium details.kp-faq summary:hover,.kyma-premium details.kp-matrix summary:hover{color:var(--accent-solid)}
       `}</style>
 
       <audio ref={audioRef} preload="none" crossOrigin="anonymous" />
@@ -314,7 +366,8 @@ export default function LandingPremium({
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 26 }} className="kp-navlinks">
             <a className="kp-nav" href="#features">Producto</a>
-            <a className="kp-nav" href="#capacidades">Capacidades</a>
+            <a className="kp-nav" href="#productos">Productos</a>
+            <a className="kp-nav" href="#porque">Por qué Kyma</a>
             <a className="kp-nav" href="#steps">Cómo funciona</a>
             <a className="kp-nav" href="#pricing">Precios</a>
           </div>
@@ -342,7 +395,7 @@ export default function LandingPremium({
               Cualquier voz.<br /><span style={gold}>Cualquier idioma.</span>
             </h1>
             <p style={{ maxWidth: 430, marginTop: 22, color: "var(--c-text-2)", fontSize: 17, lineHeight: 1.6 }}>
-              Cloná, diseñá y generá voces con IA en 646 idiomas. Grabá 10 segundos y replicá tu voz en segundos. Sin estudio, sin GPU.
+              Cloná, diseñá y generá voces con IA, en español y muchos idiomas más. Grabá 10 segundos y replicá tu voz en segundos. Sin estudio, sin GPU.
             </p>
             <div style={{ display: "flex", gap: 12, marginTop: 30, flexWrap: "wrap" }}>
               <a href="/studio" style={sBtn}>Probalo gratis
@@ -354,7 +407,7 @@ export default function LandingPremium({
               </button>
             </div>
             <div style={{ display: "flex", gap: 34, marginTop: 34, paddingTop: 22, borderTop: "1px solid var(--c-border)" }}>
-              {[["646", "Idiomas"], ["<1s", "Generación"], ["10k", "Chars gratis / mes"]].map(([n, l]) => (
+              {[["30+", "Idiomas top"], ["<1s", "Generación"], ["10k", "Chars gratis / mes"]].map(([n, l]) => (
                 <div key={l}>
                   <div style={{ fontSize: 26, fontWeight: 800, fontFamily: "var(--font-head)" }}>{n}</div>
                   <div style={{ fontSize: 12, color: "var(--c-text-3)" }}>{l}</div>
@@ -381,9 +434,9 @@ export default function LandingPremium({
               <span style={{ position: "absolute", bottom: 0, left: 0, width: 26, height: 26, borderBottom: "2px solid var(--accent-solid)", borderLeft: "2px solid var(--accent-solid)", borderBottomLeftRadius: 6, opacity: 0.7 }} />
               <span style={{ position: "absolute", bottom: 0, right: 0, width: 26, height: 26, borderBottom: "2px solid var(--accent-solid)", borderRight: "2px solid var(--accent-solid)", borderBottomRightRadius: 6, opacity: 0.7 }} />
               <span style={{ position: "absolute", top: 9, left: 16, display: "inline-flex", alignItems: "center", gap: 5, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--c-text-3)" }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-solid)", boxShadow: "0 0 7px var(--accent-glow)" }} />LIVE</span>
-              <span style={{ position: "absolute", top: 9, right: 16, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--c-text-3)" }}>RTF 0.025</span>
+              <span style={{ position: "absolute", top: 9, right: 16, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--c-text-3)" }}>24 kHz</span>
               <span style={{ position: "absolute", bottom: 9, left: 16, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--c-text-3)" }}>FREQ 0–8k</span>
-              <span style={{ position: "absolute", bottom: 9, right: 16, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--c-text-3)" }}>646 LANG</span>
+              <span style={{ position: "absolute", bottom: 9, right: 16, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", color: "var(--c-text-3)" }}>MULTI-LANG</span>
               <div style={{ position: "relative", width: "100%", height: "100%" }}>
                 <canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} />
               </div>
@@ -430,6 +483,7 @@ export default function LandingPremium({
                 <span style={{ fontSize: 12, color: "var(--c-text-3)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Cola de voces</span>
                 <span style={{ fontFamily: mono, fontSize: 11, color: "var(--c-text-3)" }}>{VOICES.length} voces</span>
               </div>
+              <div style={{ maxHeight: 210, overflowY: "auto", margin: "0 -2px", paddingRight: 2 }}>
               {VOICES.map((vo, k) => (
                 <button key={k} onClick={() => select(k)} className="kp-row" style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "7px 8px", borderRadius: 10, border: "none", cursor: "pointer", background: k === index ? "var(--accent-soft)" : "transparent", textAlign: "left" }}>
                   <span style={{ width: 3, height: 16, borderRadius: 2, background: k === index ? "var(--accent-grad)" : "var(--c-border-2)" }} />
@@ -439,6 +493,7 @@ export default function LandingPremium({
                   <span style={{ marginLeft: "auto", fontFamily: mono, fontSize: 11, color: "var(--c-text-3)" }}>{vo.lang}</span>
                 </button>
               ))}
+              </div>
             </div>
           </div>
         </div>
@@ -466,13 +521,13 @@ export default function LandingPremium({
         </div>
       </section>
 
-      {/* ── CAPACIDADES (catálogo · Fase A) ── */}
-      <section id="capacidades" style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 32px 30px" }}>
-        <Eyebrow>Capacidades</Eyebrow>
-        <h2 style={{ fontSize: "clamp(30px,3.6vw,44px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 8 }}>Todo lo que generás, <span style={gold}>en 646 idiomas</span></h2>
-        <p style={{ color: "var(--c-text-2)", marginBottom: 26, fontSize: 16, maxWidth: 660, lineHeight: 1.6 }}>Pensado para el <strong style={{ color: "var(--c-text)" }}>español y LatAm</strong> — donde otros suenan robóticos — y además en más de 600 idiomas.</p>
+      {/* ── PRODUCTOS · suite "Kyma X" (marca-paraguas) ── */}
+      <section id="productos" style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 32px 30px" }}>
+        <Eyebrow>Productos</Eyebrow>
+        <h2 style={{ fontSize: "clamp(30px,3.6vw,44px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 8 }}>La suite <span style={gold}>Kyma</span></h2>
+        <p style={{ color: "var(--c-text-2)", marginBottom: 26, fontSize: 16, maxWidth: 660, lineHeight: 1.6 }}>Una familia de productos, un solo nombre. Generá voz con IA en <strong style={{ color: "var(--c-text)" }}>español</strong> y muchos idiomas más.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(238px,1fr))", gap: 14 }}>
-          {CAPABILITIES.map((c) => (
+          {PRODUCTS.map((c) => (
             <a key={c.t} href={c.href} className="kp-card-h" style={{ ...card, padding: 18, textDecoration: "none", display: "block", color: "var(--c-text)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                 <span style={{ flexShrink: 0, width: 8, height: 8, borderRadius: 99, background: "var(--accent-grad)" }} />
@@ -512,15 +567,59 @@ export default function LandingPremium({
         </div>
       </section>
 
+      {/* ── POR QUÉ KYMA · comparativa pública (Fase B) ── */}
+      <section id="porque" style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 32px 30px" }}>
+        <Eyebrow>Por qué Kyma</Eyebrow>
+        <h2 style={{ fontSize: "clamp(30px,3.6vw,44px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 8 }}>
+          Multilenguaje y <span style={gold}>tu propia voz</span></h2>
+        <p style={{ color: "var(--c-text-2)", marginBottom: 26, fontSize: 16, maxWidth: 680, lineHeight: 1.6 }}>
+          Generá en <strong style={{ color: "var(--c-text)" }}>español, inglés, portugués, francés y muchos idiomas más</strong>,
+          cloná tu propia voz con 10 segundos de audio y diseñá voces desde cero — con una API lista para integrar
+          y una relación precio/volumen muy competitiva.
+        </p>
+
+        <div style={{ ...card, borderRadius: 20, overflow: "hidden" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table className="kp-cmp" style={{ width: "100%", borderCollapse: "collapse", minWidth: 560, fontSize: 14 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "16px 18px", fontWeight: 500, color: "var(--c-text-3)", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em" }}>Comparativa</th>
+                  <th style={{ padding: "14px 14px", textAlign: "center", position: "relative" }}>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontWeight: 800, fontFamily: "var(--font-head)", fontSize: 16 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: 99, background: "var(--accent-grad)" }} />Kyma
+                    </div>
+                  </th>
+                  <th style={{ padding: "14px 14px", textAlign: "center", color: "var(--c-text-2)", fontWeight: 600 }}>ElevenLabs</th>
+                  <th style={{ padding: "14px 14px", textAlign: "center", color: "var(--c-text-2)", fontWeight: 600 }}>Cartesia</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARE.map((r) => (
+                  <tr key={r.label} className="kp-row" style={{ borderTop: "1px solid var(--c-border)" }}>
+                    <td style={{ padding: "13px 18px", color: "var(--c-text)", fontWeight: 500 }}>{r.label}</td>
+                    <td style={{ padding: "13px 14px", textAlign: "center", background: r.highlight ? "var(--accent-soft)" : "transparent", fontWeight: 700, color: "var(--c-text)" }}><Cmp v={r.c.kyma} strong /></td>
+                    <td style={{ padding: "13px 14px", textAlign: "center", color: "var(--c-text-2)" }}><Cmp v={r.c.el} /></td>
+                    <td style={{ padding: "13px 14px", textAlign: "center", color: "var(--c-text-2)" }}><Cmp v={r.c.car} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p style={{ marginTop: 12, fontSize: 11.5, color: "var(--c-text-3)" }}>
+          Datos de otras plataformas aproximados, según sus planes de entrada públicos (sujetos a cambios). Soporte multilenguaje vía el modelo OmniVoice.
+        </p>
+      </section>
+
       {/* ── PRICING ── */}
       <section id="pricing" style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 32px 30px" }}>
         <Eyebrow>Precios</Eyebrow>
         <h2 style={{ fontSize: "clamp(30px,3.6vw,44px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 26 }}>Empezá gratis, <span style={gold}>crecé cuando estés listo</span></h2>
         <div className="kp-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 18, alignItems: "stretch" }}>
           {[
-            { name: "Gratis", price: "$0", tag: "Para probar y proyectos chicos.", feats: ["10.000 caracteres / mes", "Voces estándar", "Generación en <1s", "646 idiomas"], cta: "Empezar gratis", href: "/studio", feat: false },
-            { name: "Creator", price: "$12", tag: "Para creadores que producen seguido.", feats: ["200.000 caracteres / mes", "Clonación de voz", "Sin marca de agua", "Descarga en alta calidad"], cta: "Probar Creator", href: creatorUrl, feat: true },
-            { name: "Pro", price: "$39", tag: "Para equipos y productos.", feats: ["1.000.000 caracteres / mes", "Acceso a la API REST", "Métricas en vivo", "Soporte prioritario"], cta: "Ir a Pro", href: proUrl, feat: false },
+            { name: "Gratis", price: "$0", tag: "Para probar y proyectos personales.", lead: "10.000 caracteres / mes", inherits: null as string | null, feats: ["Clonación y diseño de voz", "Multilenguaje · generación <1s", "Uso personal (con marca de agua)"], cta: "Empezar gratis", href: "/studio", feat: false },
+            { name: "Creator", price: "$12", tag: "Para creadores que producen seguido.", lead: "200.000 caracteres / mes", inherits: "Gratis", feats: ["Audios sin marca de agua", "Licencia de uso comercial", "Masterizado de audio"], cta: "Probar Creator", href: creatorUrl, feat: true },
+            { name: "Pro", price: "$39", tag: "Para desarrollo y alto volumen.", lead: "1.000.000 caracteres / mes", inherits: "Creator", feats: ["Acceso a la API REST + docs", "Mayor volumen mensual", "Soporte prioritario"], cta: "Ir a Pro", href: proUrl, feat: false },
           ].map((p) => (
             <div key={p.name} style={{ ...card, padding: 26, display: "flex", flexDirection: "column", position: "relative", border: p.feat ? "1.5px solid var(--accent-solid)" : "1px solid var(--c-border)", boxShadow: p.feat ? "var(--c-shadow)" : "var(--c-shadow-soft)" }}>
               {p.feat && <span style={{ position: "absolute", top: -11, left: "50%", transform: "translateX(-50%)", background: "var(--accent-grad)", color: "#1a1408", fontSize: 11, fontWeight: 700, padding: "3px 12px", borderRadius: 99 }}>Más elegido</span>}
@@ -529,11 +628,16 @@ export default function LandingPremium({
                 <span style={{ fontSize: 40, fontWeight: 800, fontFamily: "var(--font-head)" }}>{p.price}</span>
                 <span style={{ fontSize: 14, color: "var(--c-text-3)" }}>/mes</span>
               </div>
-              <p style={{ fontSize: 13, color: "var(--c-text-3)", marginBottom: 16 }}>{p.tag}</p>
+              <p style={{ fontSize: 13, color: "var(--c-text-3)", marginBottom: 14 }}>{p.tag}</p>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 7, paddingBottom: 14, marginBottom: 14, borderBottom: "1px solid var(--c-border)" }}>
+                <span style={{ fontSize: 15, fontWeight: 800, fontFamily: "var(--font-head)", ...gold }}>{p.lead.split(" ")[0]}</span>
+                <span style={{ fontSize: 13, color: "var(--c-text-2)" }}>{p.lead.split(" ").slice(1).join(" ")}</span>
+              </div>
+              <p style={{ fontSize: 12.5, fontWeight: 700, color: "var(--c-text-2)", marginBottom: 11 }}>{p.inherits ? `Todo lo de ${p.inherits}, más:` : "Incluye:"}</p>
               <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px", display: "flex", flexDirection: "column", gap: 9 }}>
                 {p.feats.map((f) => (
-                  <li key={f} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14, color: "var(--c-text)" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-solid)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>{f}
+                  <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 14, color: "var(--c-text)" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-solid)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}><path d="M20 6 9 17l-5-5" /></svg>{f}
                   </li>
                 ))}
               </ul>
@@ -541,7 +645,50 @@ export default function LandingPremium({
             </div>
           ))}
         </div>
+
+        {/* Comparar planes en detalle (colapsable, estilo Cartesia) */}
+        <details className="kp-matrix" style={{ ...card, borderRadius: 18, marginTop: 22, overflow: "hidden" }}>
+          <summary style={{ cursor: "pointer", listStyle: "none", padding: "16px 22px", display: "flex", alignItems: "center", justifyContent: "space-between", fontWeight: 700, fontSize: 15 }}>
+            Comparar planes en detalle
+            <span className="kp-matrix-chevron" style={{ color: "var(--c-text-3)", fontSize: 13, transition: "transform .2s ease" }}>▼</span>
+          </summary>
+          <div style={{ overflowX: "auto", borderTop: "1px solid var(--c-border)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 560, fontSize: 14 }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "12px 18px", fontSize: 12, color: "var(--c-text-3)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500 }}>Función</th>
+                  {PLAN_COLS.map((c, i) => (
+                    <th key={c} style={{ padding: "12px 14px", textAlign: "center", fontWeight: 800, fontFamily: "var(--font-head)", fontSize: 15, color: i === 1 ? "var(--accent-solid)" : "var(--c-text)" }}>{c}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {MATRIX.map((g) => (
+                  <FragmentGroup key={g.group} group={g.group} rows={g.rows} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+
         <p style={{ textAlign: "center", marginTop: 18, fontSize: 12, color: "var(--c-text-3)" }}>Solo para uso responsable y con consentimiento de las voces clonadas.</p>
+      </section>
+
+      {/* ── FAQ de facturación (Fase B+) ── */}
+      <section id="faq" style={{ maxWidth: 820, margin: "0 auto", padding: "40px 32px 30px" }}>
+        <Eyebrow>Preguntas frecuentes</Eyebrow>
+        <h2 style={{ fontSize: "clamp(30px,3.6vw,44px)", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 26 }}>Facturación, <span style={gold}>sin letra chica</span></h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {FAQS.map((f) => (
+            <details key={f.q} className="kp-faq" style={{ ...card, borderRadius: 14, padding: "2px 0" }}>
+              <summary style={{ cursor: "pointer", listStyle: "none", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontWeight: 600, fontSize: 15.5 }}>
+                {f.q}
+                <span className="kp-faq-plus" style={{ color: "var(--accent-solid)", fontSize: 20, lineHeight: 1, flexShrink: 0, transition: "transform .2s ease" }}>+</span>
+              </summary>
+              <p style={{ padding: "0 20px 18px", fontSize: 14.5, color: "var(--c-text-2)", lineHeight: 1.6 }}>{f.a}</p>
+            </details>
+          ))}
+        </div>
       </section>
 
       {/* ── CTA FINAL ── */}
@@ -567,11 +714,11 @@ export default function LandingPremium({
               </div>
               <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-head)" }}>Kyma</span>
             </div>
-            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 12, maxWidth: 240, lineHeight: 1.55 }}>Voz con IA pensada para el español — y 646 idiomas más. Cloná, diseñá y generá en segundos.</p>
+            <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 12, maxWidth: 240, lineHeight: 1.55 }}>Voz con IA en español y muchos idiomas más. Cloná, diseñá y generá en segundos.</p>
           </div>
-          <FootCol title="Capacidades" links={CAPABILITIES.map((c) => [c.t, c.href] as [string, string])} />
-          <FootCol title="Soluciones" links={SOLUTIONS.map((s) => [s, "#capacidades"] as [string, string])} />
-          <FootCol title="Recursos" links={[["Studio", "/studio"], ["Documentación", "/docs"], ["API", "/docs"], ["Precios", "#pricing"], ["Términos", "/terminos"], ["Privacidad", "/privacidad"]]} />
+          <FootCol title="Productos" links={PRODUCTS.map((c) => [c.t, c.href] as [string, string])} />
+          <FootCol title="Soluciones" links={SOLUTIONS.map((s) => [s, "#productos"] as [string, string])} />
+          <FootCol title="Recursos" links={[["Studio", "/studio"], ["Documentación", "/docs"], ["API", "/docs"], ["Precios", "#pricing"], ["Preguntas frecuentes", "#faq"], ["Términos", "/terminos"], ["Privacidad", "/privacidad"]]} />
         </div>
         <div style={{ borderTop: "1px solid var(--c-border)" }}>
           <div style={{ maxWidth: 1100, margin: "0 auto", padding: "16px 32px", fontSize: 12, color: "var(--c-text-3)" }}>© 2026 Kyma · kyma.synthetic.com.ar · powered by Synthetic</div>
@@ -579,6 +726,30 @@ export default function LandingPremium({
       </footer>
     </div>
   );
+}
+
+function FragmentGroup({ group, rows }: { group: string; rows: { label: string; vals: [V, V, V] }[] }) {
+  return (
+    <>
+      <tr>
+        <td colSpan={4} style={{ padding: "12px 18px 6px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--c-text-3)", background: "var(--c-surface-2)" }}>{group}</td>
+      </tr>
+      {rows.map((r) => (
+        <tr key={r.label} className="kp-row" style={{ borderTop: "1px solid var(--c-border)" }}>
+          <td style={{ padding: "12px 18px", color: "var(--c-text)" }}>{r.label}</td>
+          {r.vals.map((v, i) => (
+            <td key={i} style={{ padding: "12px 14px", textAlign: "center", color: i === 1 ? "var(--c-text)" : "var(--c-text-2)", fontWeight: i === 1 ? 600 : 400, background: i === 1 ? "var(--accent-soft)" : "transparent" }}><Cmp v={v} strong={i === 1} /></td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
+function Cmp({ v, strong }: { v: string | boolean; strong?: boolean }) {
+  if (v === true) return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={strong ? "var(--accent-solid)" : "currentColor"} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle", opacity: strong ? 1 : 0.7 }}><path d="M20 6 9 17l-5-5" /></svg>;
+  if (v === false) return <span style={{ opacity: 0.35 }}>—</span>;
+  return <span>{v}</span>;
 }
 
 function FootCol({ title, links }: { title: string; links: [string, string][] }) {

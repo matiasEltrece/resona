@@ -26,6 +26,7 @@ import tempfile
 import time
 
 import modal
+from fastapi import Header, HTTPException
 
 # ─── Imagen Docker ────────────────────────────────────────────────────────
 image = (
@@ -40,6 +41,21 @@ image = (
 )
 
 app = modal.App("kyma", image=image)
+
+# Secret con la API key del endpoint (anti-abuso). Crear con:
+#   modal secret create omnivoice-auth OMNIVOICE_API_KEY=<token>
+# Si la key viene vacía → endpoint abierto (compat con el comportamiento previo).
+auth_secret = modal.Secret.from_name("omnivoice-auth")
+
+
+def _check_auth(authorization) -> None:
+    """Exige 'Authorization: Bearer <token>' SOLO si OMNIVOICE_API_KEY está seteada."""
+    expected = os.environ.get("OMNIVOICE_API_KEY", "").strip()
+    if not expected:
+        return  # sin key configurada → abierto (no rompe nada)
+    token = (authorization or "").replace("Bearer ", "").strip()
+    if token != expected:
+        raise HTTPException(status_code=401, detail="API key inválida o ausente")
 
 # Masterizado de VOZ con la cadena probada (skill macro-audio): highpass + compresor + loudnorm 2 pasadas.
 _VO_EQ = "highpass=f=85,acompressor=threshold=-20dB:ratio=2:attack=5:release=150"
@@ -249,9 +265,9 @@ class OmniVoiceModel:
         }
 
 
-@app.function()
+@app.function(secrets=[auth_secret])
 @modal.fastapi_endpoint(method="POST")
-def generate(request: dict) -> dict:
+def generate(request: dict, authorization: str = Header(None)) -> dict:
     """
     POST /
     {
@@ -268,15 +284,17 @@ def generate(request: dict) -> dict:
     }
     → { "audio_base64", "mime", "duration_ms", "rtf" }
     """
+    _check_auth(authorization)
     model = OmniVoiceModel()
     return model.generate.remote(request)
 
 
-@app.function()
+@app.function(secrets=[auth_secret])
 @modal.fastapi_endpoint(method="POST")
-def master(request: dict) -> dict:
+def master(request: dict, authorization: str = Header(None)) -> dict:
     """POST / — masteriza un WAV de voz (EQ + compresor + loudnorm 2 pasadas, -16 LUFS / TP -1.5).
     { "audio_base64": "<base64 WAV>" } → { "audio_base64", "mime" }. Corre en CPU (no usa la GPU)."""
+    _check_auth(authorization)
     b64 = request.get("audio_base64")
     if not b64:
         return {"error": "Falta audio_base64"}

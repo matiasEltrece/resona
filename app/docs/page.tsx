@@ -11,7 +11,7 @@ export default function DocsHome() {
       <DocHeader
         eyebrow="Developers"
         title={<>API de <span style={gold}>Kyma</span></>}
-        intro="Generá voz (TTS, voice design y clonación) desde cualquier producto. Misma calidad que el Studio, 646 idiomas, con un solo POST."
+        intro="Generá voz (TTS, voice design y clonación) desde cualquier producto. Misma calidad que el Studio, multilenguaje, con un solo POST."
       />
 
       <div className="kp-prose" style={{ display: "flex", flexDirection: "column", gap: 40 }}>
@@ -34,7 +34,7 @@ export default function DocsHome() {
         <section>
           <h2 style={h2}>¿Qué podés hacer?</h2>
           <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
-            <li><strong style={{ color: "var(--c-text)" }}>Text-to-speech</strong> en 646 idiomas con calidad de estudio.</li>
+            <li><strong style={{ color: "var(--c-text)" }}>Text-to-speech</strong> en español y muchos idiomas más, con calidad de estudio.</li>
             <li><strong style={{ color: "var(--c-text)" }}>Voice design</strong>: describí la voz (género, edad, tono, acento) y se genera.</li>
             <li><strong style={{ color: "var(--c-text)" }}>Clonación</strong>: pasá 10 s de audio de referencia y hablá con esa voz.</li>
             <li>Tags expresivos como <code>[laughter]</code>, control de velocidad, semilla reproducible.</li>

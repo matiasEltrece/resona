@@ -71,11 +71,11 @@ export default function DashboardClient({ user, credits, plan, extraCredits, por
 
       {/* CTA principal: abrir Studio */}
       <Link href="/studio" className="block glow-panel rounded-2xl p-6 relative overflow-hidden glass-hover">
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(60% 100% at 100% 0%, rgba(124,92,255,0.18), transparent 60%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(60% 100% at 100% 0%, rgba(199,154,69,0.18), transparent 60%)" }} />
         <div className="relative flex items-center justify-between gap-4">
           <div>
             <p className="text-lg font-semibold">🎙 Abrir el Studio</p>
-            <p className="text-sm text-muted mt-1">Generá, cloná y diseñá voces en 646 idiomas.</p>
+            <p className="text-sm text-muted mt-1">Generá, cloná y diseñá voces en español y muchos idiomas más.</p>
           </div>
           <span className="btn-accent rounded-xl px-5 py-2.5 text-sm font-semibold whitespace-nowrap">Generar voz →</span>
         </div>

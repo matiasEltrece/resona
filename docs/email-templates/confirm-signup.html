@@ -1,0 +1,43 @@
+<!--
+  KYMA · Template Supabase Auth → "Confirm signup"
+  Pegar en: Supabase Dashboard → Authentication → Email Templates → Confirm signup
+  Asunto sugerido: Confirmá tu cuenta en Kyma
+  Variables Supabase: {{ .ConfirmationURL }} · {{ .Email }} · {{ .SiteURL }}
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1f3;margin:0;padding:32px 0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(18,17,24,.08);">
+      <tr><td style="height:4px;background:linear-gradient(115deg,#ecd49a,#c79a45);font-size:0;line-height:0;">&nbsp;</td></tr>
+      <tr><td style="padding:40px 44px 8px;">
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.02em;color:#131218;">Kyma</div>
+      </td></tr>
+      <tr><td style="padding:8px 44px 0;">
+        <h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#131218;font-weight:800;">Bienvenido/a a Kyma 👋</h1>
+        <p style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#605e6c;">
+          Confirmá tu email para activar tu cuenta y empezar a clonar, diseñar y generar voces con IA.
+          Tu plan gratuito incluye <strong style="color:#131218;">10.000 caracteres por mes</strong>, sin tarjeta.
+        </p>
+      </td></tr>
+      <tr><td style="padding:8px 44px 4px;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="border-radius:12px;background:#15141a;">
+            <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 30px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">Confirmar mi cuenta →</a>
+          </td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:22px 44px 0;">
+        <p style="margin:0;font-size:13px;line-height:1.6;color:#9b99a6;">
+          Si el botón no funciona, copiá y pegá este enlace en tu navegador:<br>
+          <a href="{{ .ConfirmationURL }}" style="color:#c79a45;word-break:break-all;">{{ .ConfirmationURL }}</a>
+        </p>
+      </td></tr>
+      <tr><td style="padding:28px 44px 40px;">
+        <hr style="border:none;border-top:1px solid rgba(18,17,24,.09);margin:0 0 16px;">
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#9b99a6;">
+          Si no creaste una cuenta en Kyma, ignorá este email.<br>
+          Kyma · <a href="{{ .SiteURL }}" style="color:#9b99a6;">kyma.synthetic.com.ar</a>
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>

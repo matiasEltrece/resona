@@ -9,13 +9,13 @@ export const brand = {
   logoMark: "Kyma",
   tagline: "Cualquier voz. Cualquier idioma. En segundos.",
   description:
-    "Estudio de voz con IA. Cloná cualquier voz con 10 segundos de audio o diseñala desde cero — 646 idiomas con calidad de estudio.",
+    "Estudio de voz con IA. Cloná cualquier voz con 10 segundos de audio o diseñala desde cero — multilenguaje, rápido y sin instalar nada.",
   domain: "kyma.synthetic.com.ar",
   email: "hola@kyma.synthetic.com.ar",
   colors: {
-    accentFrom: "#7c5cff",
-    accentVia: "#d946ef",
-    accentTo: "#22d3ee",
+    accentFrom: "#ecd49a",
+    accentVia: "#c79a45",
+    accentTo: "#a87f33",
   },
   social: {
     twitter: "@kyma_ai",

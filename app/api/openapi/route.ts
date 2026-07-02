@@ -10,7 +10,7 @@ const spec = {
     title: "Kyma API",
     version: "1.0.0",
     description:
-      "API de generación de voz con IA — TTS, voice design y clonación, 646 idiomas.\n\n" +
+      "API de generación de voz con IA — TTS, voice design y clonación, multilenguaje.\n\n" +
       "**Autenticación:** generá una API key en tu dashboard (plan Pro) y mandala como " +
       "`Authorization: Bearer kyma_sk_...` o en el header `x-api-key`.",
   },
@@ -38,7 +38,7 @@ const spec = {
         required: ["text"],
         properties: {
           text: { type: "string", maxLength: 5000, example: "Hola, esto es Kyma por API. [laughter]", description: "Texto a generar. Soporta tags como [laughter]." },
-          language: { type: "string", default: "es", example: "es", description: 'Código ISO o nombre del idioma (646 soportados).' },
+          language: { type: "string", default: "es", example: "es", description: 'Código ISO o nombre del idioma (multilenguaje).' },
           mode: { type: "string", enum: ["design", "clone"], default: "design" },
           design: { $ref: "#/components/schemas/Design" },
           referenceAudioBase64: { type: "string", description: "Audio de referencia en base64 (WAV/MP3) para mode=clone." },

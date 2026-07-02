@@ -14,7 +14,7 @@ export default function NoAccessPage() {
             Tu cuenta no tiene acceso por el momento. Estamos incorporando usuarios de a poco.
             Si querés entrar a la lista de espera, escribinos.
           </p>
-          <a href="mailto:matiasborras@gmail.com?subject=Acceso%20Kyma%20beta"
+          <a href={`mailto:${brand.email}?subject=Acceso%20Kyma%20beta`}
             className="block w-full py-3 rounded-xl font-semibold text-sm"
             style={{ background: "var(--c-btn)", color: "var(--c-btn-text)" }}>
             Solicitar acceso

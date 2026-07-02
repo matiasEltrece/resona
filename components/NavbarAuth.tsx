@@ -20,8 +20,8 @@ export default async function NavbarAuth() {
 
         {/* Links internos */}
         <div className="hidden sm:flex items-center gap-6 text-sm text-muted">
-          <a href="/studio" className="hover:text-white transition-colors">Studio</a>
-          <a href="/#features" className="hover:text-white transition-colors">Features</a>
+          <a href="/studio" className="hover:text-white transition-colors">Kyma Studio</a>
+          <a href="/#productos" className="hover:text-white transition-colors">Productos</a>
           <a href="/#pricing" className="hover:text-white transition-colors">Precios</a>
           <a href="/docs" className="hover:text-white transition-colors">API</a>
         </div>

@@ -127,7 +127,7 @@ export default function ApiKeysClient({ initialKeys }: { initialKeys: ApiKey[] }
       <div className="glass rounded-2xl p-6 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">Quickstart</h2>
-          <a href="https://github.com/matiasEltrece/resona/blob/master/docs/GUIA-API.md" target="_blank" rel="noopener noreferrer" className="text-xs text-accent underline">Docs completos →</a>
+          <a href="/docs" className="text-xs text-accent underline">Docs completos →</a>
         </div>
         <pre className="text-xs bg-black/30 rounded-xl p-4 overflow-x-auto font-mono leading-relaxed">{curlExample}</pre>
         <p className="text-xs text-muted">La respuesta es JSON con <code>audioBase64</code> (WAV en base64), <code>durationMs</code> y <code>rtf</code>.</p>

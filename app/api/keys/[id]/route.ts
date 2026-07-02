@@ -13,8 +13,8 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // RLS asegura que solo borre las propias
-  const { error } = await supabase.from("kyma_api_keys").delete().eq("id", id);
+  // Filtro explícito por dueño (defensa en profundidad, además de RLS)
+  const { error } = await supabase.from("kyma_api_keys").delete().eq("id", id).eq("user_id", user.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });
