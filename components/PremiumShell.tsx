@@ -16,11 +16,8 @@ export default function PremiumShell({ children }: { children: React.ReactNode }
       <div style={{ position: "fixed", inset: 0, background: "var(--c-page)", zIndex: -1 }} aria-hidden />
       <nav style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--c-page)", borderBottom: "1px solid var(--c-border)" }}>
         <div style={{ maxWidth: 1240, margin: "0 auto", height: 72, padding: "0 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <a href="/" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none", color: "var(--c-text)" }}>
-            <div style={{ width: 30, height: 30, borderRadius: 9, background: "var(--accent-grad)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24"><g stroke="#fff" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="9" x2="5" y2="15" /><line x1="10" y1="5" x2="10" y2="19" /><line x1="15" y1="7" x2="15" y2="17" /><line x1="20" y1="10" x2="20" y2="14" /></g></svg>
-            </div>
-            <span style={{ fontSize: 20, fontWeight: 700, fontFamily: "var(--font-head)" }}>Kyma</span>
+          <a href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "var(--c-text)" }}>
+            <img src="/kyma-logo.png" alt="Kyma" style={{ height: 28, width: "auto" }} />
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <a className="kp-nav" href="/">← Inicio</a>

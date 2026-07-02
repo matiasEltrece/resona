@@ -17,7 +17,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Navbar del dashboard */}
         <nav className="sticky top-0 z-30 border-b" style={{ background: "var(--c-page)", borderColor: "var(--c-border)" }}>
           <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-            <a href="/" className="text-lg font-bold text-gradient">{brand.name}</a>
+            <a href="/" style={{ display: "flex", alignItems: "center" }}>
+              <img src="/kyma-logo.png" alt={brand.name} style={{ height: 24, width: "auto" }} />
+            </a>
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted hidden sm:block">{user.email}</span>
               <a href="/dashboard/cuenta" className="glass glass-hover text-xs px-3 py-1.5 rounded-lg">Cuenta</a>

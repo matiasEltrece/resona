@@ -11,7 +11,7 @@ const shell = (title: string, body: string) => `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1f3;margin:0;padding:32px 0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
 <tr><td align="center"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(18,17,24,.08);">
 <tr><td style="height:4px;background:linear-gradient(115deg,#ecd49a,#c79a45);font-size:0;line-height:0;">&nbsp;</td></tr>
-<tr><td style="padding:40px 44px 8px;"><div style="font-size:26px;font-weight:800;letter-spacing:-.02em;color:#131218;">Kyma</div></td></tr>
+<tr><td style="padding:40px 44px 8px;"><img src="${SITE}/kyma-logo.png" alt="Kyma" height="28" style="display:block;height:28px;width:auto;"></td></tr>
 <tr><td style="padding:8px 44px 0;"><h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;color:#131218;font-weight:800;">${title}</h1>${body}</td></tr>
 <tr><td style="padding:28px 44px 40px;"><hr style="border:none;border-top:1px solid rgba(18,17,24,.09);margin:22px 0 16px;">
 <p style="margin:0;font-size:12px;line-height:1.6;color:#9b99a6;">Kyma · <a href="${SITE}" style="color:#9b99a6;">kyma.synthetic.com.ar</a></p></td></tr>
