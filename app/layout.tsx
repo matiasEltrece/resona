@@ -140,13 +140,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const preset = FONT_PRESETS[config.fontPreset] ?? FONT_PRESETS[DEFAULT_FONT_PRESET];
   const brandOverrideCss = `
     :root, .kyma-premium, .kyma-premium[data-theme="dark"] {
-      --gold-1: ${config.accentFrom};
-      --gold-2: ${config.accentVia};
-      --accent-grad: linear-gradient(115deg, ${config.accentFrom}, ${config.accentVia});
-      --accent-solid: ${config.accentTo};
-      --accent-glow: ${config.accentTo}73;
-      --font-head: ${preset.head}, system-ui, sans-serif;
-      --font-body: ${preset.body}, system-ui, sans-serif;
+      --gold-1: ${config.accentFrom} !important;
+      --gold-2: ${config.accentVia} !important;
+      --accent-grad: linear-gradient(115deg, ${config.accentFrom}, ${config.accentVia}) !important;
+      --accent-solid: ${config.accentTo} !important;
+      --accent-glow: ${config.accentTo}73 !important;
+      --font-head: ${preset.head}, system-ui, sans-serif !important;
+      --font-body: ${preset.body}, system-ui, sans-serif !important;
     }
   `;
 
