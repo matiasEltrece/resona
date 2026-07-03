@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 export async function createClient() {
@@ -38,5 +39,20 @@ export async function createServiceClient() {
         },
       },
     },
+  );
+}
+
+/**
+ * Cliente admin "puro" (sin cookies de sesión de usuario). A diferencia de
+ * createServiceClient(), que via @supabase/ssr puede terminar autenticando
+ * como el usuario logueado (su JWT en la cookie pisa la service_role key),
+ * este siempre pega con la service_role key y bypassea RLS de verdad.
+ * Usar solo en rutas ya gateadas por ADMIN_EMAIL u otra autorización server-side.
+ */
+export function createAdminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
   );
 }

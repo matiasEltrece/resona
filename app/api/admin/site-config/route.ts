@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { FONT_PRESETS } from "@/lib/site-config";
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
@@ -13,7 +13,7 @@ async function requireAdmin() {
   return !!user && !!adminEmail && user.email === adminEmail;
 }
 
-async function uploadLogo(service: Awaited<ReturnType<typeof createServiceClient>>, file: File, slug: string) {
+async function uploadLogo(service: ReturnType<typeof createAdminClient>, file: File, slug: string) {
   if (!ALLOWED_LOGO_TYPES.includes(file.type)) throw new Error(`Formato no soportado: ${file.type}`);
   if (file.size > MAX_LOGO_BYTES) throw new Error("El archivo supera 2MB");
   const ext = file.type === "image/svg+xml" ? "svg" : file.type === "image/webp" ? "webp" : "png";
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Preset de tipografía inválido" }, { status: 400 });
   }
 
-  const service = await createServiceClient();
+  const service = createAdminClient();
   const update: Record<string, string> = {
     accent_from: accentFrom,
     accent_via: accentVia,
@@ -59,8 +59,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error subiendo el logo" }, { status: 400 });
   }
 
-  const { error } = await service.from("kyma_site_config").update(update).eq("singleton", true);
+  const { data, error } = await service.from("kyma_site_config").update(update).eq("singleton", true).select();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data || data.length === 0) return NextResponse.json({ error: "No se actualizó ninguna fila (revisar RLS/permisos)" }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export interface SiteConfig {
   accentFrom: string;
@@ -36,7 +36,7 @@ export const DEFAULT_FONT_PRESET = "bricolage-space";
 /** Config de marca (colores/tipografía/logos), editable desde /dashboard/admin/branding. Lectura pública, sin caché entre requests. */
 export async function getSiteConfig(): Promise<SiteConfig> {
   try {
-    const service = await createServiceClient();
+    const service = createAdminClient();
     const { data } = await service.from("kyma_site_config").select("*").eq("singleton", true).maybeSingle();
     if (!data) return DEFAULTS;
     return {
