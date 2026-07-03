@@ -1,13 +1,18 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { brand } from "@/lib/brand";
+import { getSiteConfig } from "@/lib/site-config";
 import PremiumThemeRoot from "@/components/PremiumThemeRoot";
 
 export const metadata = { title: `Dashboard — ${brand.name}` };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const [{ data: { user } }, config] = await Promise.all([
+    supabase.auth.getUser(),
+    getSiteConfig(),
+  ]);
+  const logoCompactUrl = config.logoCompactUrl || "/kyma-logo.png";
 
   if (!user) redirect("/auth/login?next=/dashboard");
 
@@ -18,7 +23,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <nav className="sticky top-0 z-30 border-b" style={{ background: "var(--c-page)", borderColor: "var(--c-border)" }}>
           <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
             <a href="/" style={{ display: "flex", alignItems: "center" }}>
-              <img src="/kyma-logo.png" alt={brand.name} style={{ height: 24, width: "auto" }} />
+              <img src={logoCompactUrl} alt={brand.name} style={{ height: 24, width: "auto" }} />
             </a>
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted hidden sm:block">{user.email}</span>

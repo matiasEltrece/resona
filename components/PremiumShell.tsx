@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useBrand } from "@/components/BrandProvider";
 
 /* Marco premium (navbar + footer + tema claro/oscuro) para páginas de contenido
    — términos, privacidad, docs. Comparte la estética de la landing. */
 export default function PremiumShell({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(false);
+  const { logoCompactUrl } = useBrand();
   useEffect(() => { if (localStorage.getItem("kyma-theme") === "dark") setDark(true); }, []);
   const toggleTheme = () => setDark((d) => { localStorage.setItem("kyma-theme", d ? "light" : "dark"); return !d; });
 
@@ -17,7 +19,7 @@ export default function PremiumShell({ children }: { children: React.ReactNode }
       <nav style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--c-page)", borderBottom: "1px solid var(--c-border)" }}>
         <div style={{ maxWidth: 1240, margin: "0 auto", height: 72, padding: "0 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <a href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "var(--c-text)" }}>
-            <img src="/kyma-logo.png" alt="Kyma" style={{ height: 28, width: "auto" }} />
+            <img src={logoCompactUrl} alt="Kyma" style={{ height: 28, width: "auto" }} />
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <a className="kp-nav" href="/">← Inicio</a>

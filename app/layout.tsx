@@ -1,11 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Bricolage_Grotesque, Space_Grotesk } from "next/font/google";
+import { Geist, Geist_Mono, Bricolage_Grotesque, Space_Grotesk, Playfair_Display, Inter, Sora, Manrope, Fraunces } from "next/font/google";
 import "./globals.css";
+import { getSiteConfig, FONT_PRESETS, DEFAULT_FONT_PRESET } from "@/lib/site-config";
+import { BrandProvider } from "@/components/BrandProvider";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"], weight: ["500", "600", "700", "800"] });
 const spaceGrotesk = Space_Grotesk({ variable: "--font-space", subsets: ["latin"] });
+// Presets de tipografía adicionales, seleccionables desde /dashboard/admin/branding
+const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], weight: ["600", "700", "800"] });
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const sora = Sora({ variable: "--font-sora", subsets: ["latin"], weight: ["600", "700", "800"] });
+const manrope = Manrope({ variable: "--font-manrope", subsets: ["latin"] });
+const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], weight: ["600", "700", "800"] });
+const FONT_CLASSES = `${playfair.variable} ${inter.variable} ${sora.variable} ${manrope.variable} ${fraunces.variable}`;
 
 const SITE_URL = "https://kyma.synthetic.com.ar";
 
@@ -126,16 +135,35 @@ const JSON_LD = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const config = await getSiteConfig();
+  const preset = FONT_PRESETS[config.fontPreset] ?? FONT_PRESETS[DEFAULT_FONT_PRESET];
+  const brandOverrideCss = `
+    :root, .kyma-premium, .kyma-premium[data-theme="dark"] {
+      --gold-1: ${config.accentFrom};
+      --gold-2: ${config.accentVia};
+      --accent-grad: linear-gradient(115deg, ${config.accentFrom}, ${config.accentVia});
+      --accent-solid: ${config.accentTo};
+      --accent-glow: ${config.accentTo}73;
+      --font-head: ${preset.head}, system-ui, sans-serif;
+      --font-body: ${preset.body}, system-ui, sans-serif;
+    }
+  `;
+
   return (
-    <html lang="es" className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${spaceGrotesk.variable} h-full antialiased`}>
+    <html lang="es" className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${spaceGrotesk.variable} ${FONT_CLASSES} h-full antialiased`}>
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: brandOverrideCss }} />
+      </head>
       <body className="min-h-full grain">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
         <div className="aurora-bg" />
-        {children}
+        <BrandProvider logoCompactUrl={config.logoCompactUrl} logoStudioUrl={config.logoStudioUrl}>
+          {children}
+        </BrandProvider>
       </body>
     </html>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useBrand } from "@/components/BrandProvider";
 
 /* ──────────────────────────────────────────────────────────────────────────
    KYMA · Landing premium (dorado/claro + dark) — diseño de Claude Design,
@@ -111,6 +112,7 @@ export default function LandingPremium({
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [dark, setDark] = useState(false);
+  const { logoCompactUrl } = useBrand();
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -358,7 +360,7 @@ export default function LandingPremium({
       <nav style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--c-page)", borderBottom: "1px solid var(--c-border)" }}>
         <div style={{ maxWidth: 1240, margin: "0 auto", height: 72, padding: "0 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <img src="/kyma-logo.png" alt="Kyma" style={{ height: 26, width: "auto" }} />
+            <img src={logoCompactUrl} alt="Kyma" style={{ height: 26, width: "auto" }} />
             <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", border: "1px solid var(--c-border-2)", borderRadius: 99, padding: "2px 8px", color: "var(--c-text-3)" }}>beta</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 26 }} className="kp-navlinks">
@@ -706,7 +708,7 @@ export default function LandingPremium({
         <div className="kp-foot" style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 32px 28px", display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr", gap: 32 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center" }}>
-              <img src="/kyma-logo.png" alt="Kyma" style={{ height: 24, width: "auto" }} />
+              <img src={logoCompactUrl} alt="Kyma" style={{ height: 24, width: "auto" }} />
             </div>
             <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 12, maxWidth: 240, lineHeight: 1.55 }}>Voz con IA en español y muchos idiomas más. Cloná, diseñá y generá en segundos.</p>
           </div>

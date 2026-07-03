@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useBrand } from "@/components/BrandProvider";
 
 /* Portal de documentación premium: navbar + sidebar con secciones + main.
    Tema claro/oscuro persistido (localStorage "kyma-theme"). */
@@ -28,6 +29,7 @@ const NAV: { group: string; items: { href: string; label: string; badge?: string
 export default function DocsShell({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(false);
   const pathname = usePathname();
+  const { logoCompactUrl } = useBrand();
   useEffect(() => { if (localStorage.getItem("kyma-theme") === "dark") setDark(true); }, []);
   const toggleTheme = () => setDark((d) => { localStorage.setItem("kyma-theme", d ? "light" : "dark"); return !d; });
 
@@ -40,7 +42,7 @@ export default function DocsShell({ children }: { children: React.ReactNode }) {
       <nav style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--c-page)", borderBottom: "1px solid var(--c-border)" }}>
         <div style={{ maxWidth: 1240, margin: "0 auto", height: 72, padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "var(--c-text)" }}>
-            <img src="/kyma-logo.png" alt="Kyma" style={{ height: 26, width: "auto" }} />
+            <img src={logoCompactUrl} alt="Kyma" style={{ height: 26, width: "auto" }} />
             <span style={{ fontSize: 12, color: "var(--c-text-3)", marginLeft: 2 }}>docs</span>
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
