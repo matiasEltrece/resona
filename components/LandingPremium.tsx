@@ -358,10 +358,7 @@ export default function LandingPremium({
       <nav style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--c-page)", borderBottom: "1px solid var(--c-border)" }}>
         <div style={{ maxWidth: 1240, margin: "0 auto", height: 72, padding: "0 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 9, background: "var(--accent-grad)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24"><g stroke="#fff" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="9" x2="5" y2="15" /><line x1="10" y1="5" x2="10" y2="19" /><line x1="15" y1="7" x2="15" y2="17" /><line x1="20" y1="10" x2="20" y2="14" /></g></svg>
-            </div>
-            <span style={{ fontSize: 20, fontWeight: 700, fontFamily: "var(--font-head)" }}>Kyma</span>
+            <img src="/kyma-logo.png" alt="Kyma" style={{ height: 26, width: "auto" }} />
             <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.12em", border: "1px solid var(--c-border-2)", borderRadius: 99, padding: "2px 8px", color: "var(--c-text-3)" }}>beta</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 26 }} className="kp-navlinks">
@@ -708,11 +705,8 @@ export default function LandingPremium({
       <footer style={{ borderTop: "1px solid var(--c-border)" }}>
         <div className="kp-foot" style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 32px 28px", display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 1fr", gap: 32 }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--accent-grad)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="15" height="15" viewBox="0 0 24 24"><g stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><line x1="6" y1="9" x2="6" y2="15" /><line x1="12" y1="5" x2="12" y2="19" /><line x1="18" y1="8" x2="18" y2="16" /></g></svg>
-              </div>
-              <span style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-head)" }}>Kyma</span>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <img src="/kyma-logo.png" alt="Kyma" style={{ height: 24, width: "auto" }} />
             </div>
             <p style={{ fontSize: 13, color: "var(--c-text-3)", marginTop: 12, maxWidth: 240, lineHeight: 1.55 }}>Voz con IA en español y muchos idiomas más. Cloná, diseñá y generá en segundos.</p>
           </div>
