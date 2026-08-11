@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { checkPasswordLeaked } from "@/lib/hibp";
 
 export default function AccountClient({ email, isAdmin }: { email: string; isAdmin: boolean }) {
   // Cambiar contraseña
@@ -23,7 +24,13 @@ export default function AccountClient({ email, isAdmin }: { email: string; isAdm
     e.preventDefault();
     if (pw.length < 6) { setPwMsg({ ok: false, text: "Mínimo 6 caracteres." }); return; }
     setPwState("loading"); setPwMsg(null);
-    const { error } = await createClient().auth.updateUser({ password: pw });
+    const { leaked, count } = await checkPasswordLeaked(pw);
+    if (leaked) {
+      setPwState("idle");
+      setPwMsg({ ok: false, text: `Esta contraseña apareció en ${count.toLocaleString("es-AR")} filtraciones de datos conocidas. Elegí otra.` });
+      return;
+    }
+    const { error } = await createClient().auth.updateUser({ password: pw, data: { needs_password_reset: false } });
     setPwState("idle");
     if (error) setPwMsg({ ok: false, text: "No se pudo actualizar." });
     else { setPwMsg({ ok: true, text: "Contraseña actualizada." }); setPw(""); }

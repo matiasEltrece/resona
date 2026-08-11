@@ -73,6 +73,18 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Password marcada como filtrada (HIBP) en un login anterior → forzar cambio
+  // antes de dejar usar el dashboard/studio.
+  if (
+    (pathname.startsWith("/dashboard") || pathname.startsWith("/studio")) &&
+    user?.user_metadata?.needs_password_reset
+  ) {
+    const resetUrl = request.nextUrl.clone();
+    resetUrl.pathname = "/auth/reset";
+    resetUrl.searchParams.set("forced", "1");
+    return NextResponse.redirect(resetUrl);
+  }
+
   // Si ya está logueado y va al login, redirigir al dashboard
   if (pathname === "/auth/login" && user) {
     const dashUrl = request.nextUrl.clone();

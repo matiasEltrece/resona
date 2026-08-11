@@ -2,6 +2,7 @@
 
 import { useState, use, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { checkPasswordLeaked } from "@/lib/hibp";
 
 declare global {
   interface Window {
@@ -83,6 +84,12 @@ export default function LoginForm({
     const creds = { email: email.trim().toLowerCase(), password };
 
     if (mode === "signup") {
+      const { leaked, count } = await checkPasswordLeaked(password);
+      if (leaked) {
+        setError(`Esta contraseña apareció en ${count.toLocaleString("es-AR")} filtraciones de datos conocidas. Elegí otra.`);
+        setState("idle");
+        return;
+      }
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
       const { data, error: err } = await supabase.auth.signUp({
         ...creds,
@@ -107,6 +114,13 @@ export default function LoginForm({
     } else {
       const { error: err } = await supabase.auth.signInWithPassword(creds);
       if (err) { setError("Email o contraseña incorrectos."); setState("idle"); return; }
+      // Chequeo silencioso contra HIBP en cada login (fire-and-forget: no retrasa
+      // el ingreso). Si la contraseña salió filtrada, marcamos el flag en el user
+      // metadata — el middleware fuerza el reset antes de dejar entrar a
+      // /dashboard o /studio en la próxima navegación.
+      void checkPasswordLeaked(password).then(({ leaked }) => {
+        if (leaked) void supabase.auth.updateUser({ data: { needs_password_reset: true } });
+      });
       window.location.href = next;
     }
   };
