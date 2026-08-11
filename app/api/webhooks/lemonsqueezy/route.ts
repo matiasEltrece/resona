@@ -14,6 +14,8 @@ export const runtime = "nodejs";
  *  - subscription_expired    → el período pagado terminó → recién ahí baja a free
  *  - subscription_paused     → pausa la suscripción → free
  *  - order_created (pack de créditos one-time) → suma créditos
+ *  - order_refunded → pack: descuenta los créditos (clawback); suscripción: corta el
+ *    acceso (plan free) — requiere que el evento esté suscripto en el webhook de Lemon
  *
  * Env: LEMON_WEBHOOK_SECRET
  */
@@ -84,21 +86,39 @@ export async function POST(req: NextRequest) {
       case "subscription_updated":
       case "subscription_resumed":
       case "subscription_unpaused": {
-        // Mapear variant → plan (si no hay mapeo, asumimos 'creator' como default pago)
+        // Mapear variant → plan. Si no hay match (variant nuevo sin sincronizar en
+        // kyma_plans, o el evento es de OTRO producto de la misma store de Lemon que
+        // por email-fallback resolvió a este user_id) NO asumimos ningun plan por
+        // default — eso asignaba "creator" silenciosamente a compras mal clasificadas.
         const variantId = String(attrs.variant_id ?? "");
-        const { data: plan } = await service
-          .from("kyma_plans").select("id").eq("lemon_variant_id", variantId).single();
+        const { data: plan, error: planErr } = await service
+          .from("kyma_plans").select("id").eq("lemon_variant_id", variantId).maybeSingle();
+        if (planErr || !plan) {
+          console.error(
+            `[lemon webhook] evento ${event} con variant_id "${variantId}" sin match en kyma_plans ` +
+            `(user ${userId}) — no se aplica ningun cambio de plan, revisar manualmente.`
+          );
+          break;
+        }
+        const subscriptionId = String(payload.data?.id ?? "");
+        // Idempotencia del recibo: solo mandamos el mail la PRIMERA vez que vemos esta
+        // subscripcion pasar por "created" (evita duplicados si Lemon reintenta el webhook)
+        const { data: current } = await service
+          .from("kyma_profiles").select("lemon_subscription_id").eq("id", userId).maybeSingle();
+        const alreadyProcessed = event === "subscription_created" && current?.lemon_subscription_id === subscriptionId;
+
         await updateProfile(userId, {
-          plan: plan?.id ?? "creator",
+          plan: plan.id,
           subscription_status: status || "active",
           subscription_renews_at: renewsAt,
           subscription_ends_at: endsAt,
+          lemon_subscription_id: subscriptionId,
           ...(portal ? { lemon_customer_portal_url: portal } : {}),
         });
         // Recibo branded solo al ACTIVAR por primera vez (no en renovaciones/updates)
-        if (event === "subscription_created") {
+        if (event === "subscription_created" && !alreadyProcessed) {
           const email = (attrs.user_email as string | undefined) ?? "";
-          if (email) void sendKymaEmail("receipt", email, { kind: "plan", plan: plan?.id ?? "creator" });
+          if (email) void sendKymaEmail("receipt", email, { kind: "plan", plan: plan.id });
         }
         break;
       }
@@ -145,6 +165,21 @@ export async function POST(req: NextRequest) {
               if (email) void sendKymaEmail("receipt", email, { kind: "pack", chars: pack.chars, amount: pack.price_usd });
             }
           }
+        }
+        break;
+      }
+
+      case "order_refunded": {
+        const packId = payload.meta?.custom_data?.pack_id;
+        const orderId = String(attrs.identifier ?? payload.data?.id ?? "");
+        if (packId) {
+          // Refund de un pack de créditos: descontamos lo que se sumó (idempotente,
+          // kyma_refund_credits no hace nada si esa orden ya estaba refundeada).
+          await service.rpc("kyma_refund_credits", { p_order_id: orderId });
+        } else {
+          // Sin pack_id → es el order inicial de una suscripción. Cortamos el acceso;
+          // subscription_cancelled/expired puede llegar después y es idempotente igual.
+          await updateProfile(userId, { plan: "free", subscription_status: "refunded" });
         }
         break;
       }
