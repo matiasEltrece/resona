@@ -114,13 +114,15 @@ export default function LoginForm({
     } else {
       const { error: err } = await supabase.auth.signInWithPassword(creds);
       if (err) { setError("Email o contraseña incorrectos."); setState("idle"); return; }
-      // Chequeo silencioso contra HIBP en cada login (fire-and-forget: no retrasa
-      // el ingreso). Si la contraseña salió filtrada, marcamos el flag en el user
-      // metadata — el middleware fuerza el reset antes de dejar entrar a
-      // /dashboard o /studio en la próxima navegación.
-      void checkPasswordLeaked(password).then(({ leaked }) => {
-        if (leaked) void supabase.auth.updateUser({ data: { needs_password_reset: true } });
-      });
+      // Chequeo contra HIBP en cada login. NO se puede disparar como
+      // fire-and-forget sin esperar: el window.location.href de abajo dispara una
+      // navegación completa, y el browser cancela fetches en curso al desmontar
+      // la página — un chequeo "silencioso" sin await casi nunca llega a
+      // completarse ni a marcar el flag. Se espera acá (delay chico, ~100-300ms)
+      // para que sea confiable. Si sale filtrada, el middleware fuerza el reset
+      // antes de dejar entrar a /dashboard o /studio en la próxima navegación.
+      const { leaked: pwLeaked } = await checkPasswordLeaked(password);
+      if (pwLeaked) await supabase.auth.updateUser({ data: { needs_password_reset: true } });
       window.location.href = next;
     }
   };
