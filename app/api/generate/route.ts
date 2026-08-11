@@ -21,6 +21,15 @@ export async function POST(req: NextRequest) {
   if (body.text.length > 5000) {
     return NextResponse.json({ error: "El texto supera el límite de 5000 caracteres" }, { status: 400 });
   }
+  // El cliente ya valida esto antes de subir, pero no hay que confiar solo en
+  // eso: si el string base64 es enorme, mejor rechazarlo acá con un mensaje
+  // claro que dejar que reviente en otro lado (o que llegue a Modal gratis).
+  if (body.referenceAudioBase64 && body.referenceAudioBase64.length > 4 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: "El audio de referencia es muy pesado. Recortalo a 10-30 segundos." },
+      { status: 400 },
+    );
+  }
 
   // ── Consentimiento obligatorio para clonar (anti-abuso / legal) ──────────
   const isCloneReq = body.mode === "clone" || !!body.referenceAudioBase64 || !!body.savedVoiceId;

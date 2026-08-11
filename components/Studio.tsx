@@ -581,11 +581,27 @@ function ClonePanel({
 }) {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveName, setSaveName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Tope de tamaño del audio de referencia. No es solo una sugerencia de calidad:
+  // el audio va como base64 dentro del JSON a /api/generate, y Vercel rechaza
+  // cualquier body de Function que supere 4.5MB — el base64 pesa 4/3 del
+  // archivo original, así que 3MB en crudo ya da ~4MB de body (deja margen
+  // para el texto y el resto del JSON). Si se pasa, el request ni siquiera
+  // llega a nuestro código: Vercel devuelve el 413 antes.
+  const MAX_REF_AUDIO_BYTES = 3 * 1024 * 1024;
+
   const readFile = (file: File) => {
+    if (file.size > MAX_REF_AUDIO_BYTES) {
+      setFileError(
+        `El audio pesa ${(file.size / 1024 / 1024).toFixed(1)}MB — el máximo es 3MB. Recortalo a 10-30 segundos (es lo recomendado para clonar igual) o exportalo en mono/menor calidad.`
+      );
+      return;
+    }
+    setFileError(null);
     const reader = new FileReader();
     reader.onload = (e) => {
       const url = e.target?.result as string;
@@ -606,6 +622,7 @@ function ClonePanel({
   const saveVoice = async () => {
     if (!saveName.trim() || !currentAudio) return;
     setSaving(true);
+    setFileError(null);
     try {
       const res = await fetch("/api/voices", {
         method: "POST",
@@ -615,7 +632,11 @@ function ClonePanel({
       if (res.ok) {
         setSaveName("");
         onVoicesChanged();
+      } else {
+        setFileError("No se pudo guardar la voz. Si el audio es muy pesado, recortalo a 10-30 segundos.");
       }
+    } catch {
+      setFileError("No se pudo guardar la voz (error de red). Probá de nuevo.");
     } finally {
       setSaving(false);
     }
@@ -693,6 +714,10 @@ function ClonePanel({
           </>
         )}
       </div>
+
+      {fileError && (
+        <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{fileError}</p>
+      )}
 
       {/* Transcripción opcional */}
       <div>
@@ -857,10 +882,27 @@ export default function Studio() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
+      // La respuesta puede no ser JSON si el request nunca llegó a nuestro código
+      // (ej. rechazado por la plataforma por tamaño de body antes de llegar al
+      // handler) — sin este try/catch, res.json() explota con un mensaje crudo
+      // e incomprensible en vez de mostrar un error claro.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        setError(
+          res.status === 413
+            ? "El audio de referencia es muy pesado para el servidor. Recortalo a 10-30 segundos e intentá de nuevo."
+            : `El servidor no respondió correctamente (${res.status}). Probá de nuevo en un momento.`
+        );
+        setErrorCode(null);
+        setGenState("error");
+        return;
+      }
       if (!res.ok) {
-        setError(data.error ?? "Error del servidor");
-        setErrorCode(data.code ?? null);
+        setError(data?.error ?? "Error del servidor");
+        setErrorCode(data?.code ?? null);
         setGenState("error");
         return;
       }

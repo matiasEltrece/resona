@@ -62,6 +62,13 @@ export async function POST(req: NextRequest) {
   }
   if (!body.text || body.text.trim().length === 0) return err("Falta el campo 'text'", 400, "no_text");
   if (body.text.length > 5000) return err("El texto supera el límite de 5000 caracteres", 400, "text_too_long");
+  // Vercel rechaza cualquier body de Function que supere 4.5MB (antes de que este
+  // código corra, si el caller manda un audio gigante el request ni siquiera
+  // llega acá) — igual validamos por si el runtime cambia o alguien manda un
+  // valor grande pero todavía por debajo de ese límite.
+  if (body.referenceAudioBase64 && body.referenceAudioBase64.length > 4 * 1024 * 1024) {
+    return err("El audio de referencia es muy pesado. Recortalo a 10-30 segundos.", 400, "audio_too_large");
+  }
 
   // Consentimiento obligatorio para clonar: el caller debe enviar "consent": true
   const isCloneReq = body.mode === "clone" || !!body.referenceAudioBase64 || !!body.savedVoiceId;

@@ -56,6 +56,9 @@ export async function POST(req: NextRequest) {
   if (!body.name?.trim() || !body.audioBase64) {
     return NextResponse.json({ error: "Falta el nombre o el audio" }, { status: 400 });
   }
+  if (body.audioBase64.length > 4 * 1024 * 1024) {
+    return NextResponse.json({ error: "El audio es muy pesado. Recortalo a 10-30 segundos." }, { status: 400 });
+  }
 
   const service = await createServiceClient();
   const id = crypto.randomUUID();
